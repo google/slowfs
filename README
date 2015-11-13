@@ -1,0 +1,2 @@
+SlowFS is a FUSE filesystem written in Go to simulate physical media for testing
+purposes.
