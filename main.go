@@ -4,7 +4,9 @@ import (
 	"flag"
 	"log"
 	"path/filepath"
+	"slowfs/slowfs"
 	"slowfs/slowfs/fuselayer"
+	"slowfs/slowfs/scheduler"
 
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
@@ -35,7 +37,8 @@ func main() {
 		log.Fatalf("backing directory may not be the same as mount directory.")
 	}
 
-	fs := pathfs.NewPathNodeFs(fuselayer.NewSlowFs(*backingDir), nil)
+	scheduler := scheduler.New(slowfs.HardDriveDeviceConfig)
+	fs := pathfs.NewPathNodeFs(fuselayer.NewSlowFs(*backingDir, scheduler), nil)
 	server, _, err := nodefs.MountRoot(*mountDir, fs.Root(), nil)
 	if err != nil {
 		log.Fatalf("%v", err)
