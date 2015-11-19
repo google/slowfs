@@ -3,15 +3,13 @@
 package scheduler
 
 import (
-	"log"
 	"slowfs/slowfs"
 	"time"
 )
 
 // Scheduler determines how long operations should take given a description of a physical medium.
 type Scheduler struct {
-	// Describes the physical media.
-	deviceConfig slowfs.DeviceConfig
+	dc *deviceContext
 
 	requests chan *requestData
 }
@@ -20,8 +18,8 @@ type Scheduler struct {
 // should take.
 func New(config slowfs.DeviceConfig) *Scheduler {
 	scheduler := &Scheduler{
-		deviceConfig: config,
-		requests:     make(chan *requestData, 10),
+		dc:       newDeviceContext(config),
+		requests: make(chan *requestData, 10),
 	}
 	go scheduler.serveRequests()
 	return scheduler
@@ -45,20 +43,8 @@ func (s *Scheduler) serveRequests() {
 	for {
 		reqData := <-s.requests
 		req, resp := reqData.req, reqData.responseChannel
-		reqDuration := time.Duration(0)
-
-		switch req.Type {
-		case OpenRequest:
-			reqDuration = 100 * time.Millisecond
-		case CloseRequest:
-			reqDuration = 100 * time.Millisecond
-		case ReadRequest:
-			reqDuration = 10 * time.Millisecond
-		case WriteRequest:
-			reqDuration = 5 * time.Millisecond
-		default:
-			log.Printf("unknown request type: %v\n", req)
-		}
+		reqDuration := s.dc.computeTime(req)
+		s.dc.execute(req)
 
 		resp <- reqDuration
 	}

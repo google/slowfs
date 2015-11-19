@@ -1,5 +1,6 @@
 package slowfs
 
+// Some standard data sizes.
 const (
 	Byte     int64 = 1
 	Kilobyte       = 1000 * Byte

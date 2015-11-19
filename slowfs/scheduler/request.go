@@ -2,6 +2,7 @@ package scheduler
 
 import "time"
 
+// RequestType denotes what type a request is.
 type RequestType int64
 
 // Enumeration of different types of requests.
@@ -12,7 +13,7 @@ const (
 	CloseRequest
 )
 
-// Contains information for all types of requests.
+// Request contains information for all types of requests.
 type Request struct {
 	Type      RequestType
 	Timestamp time.Time
