@@ -15,6 +15,25 @@ var testDeviceConfig = slowfs.DeviceConfig{
 	WriteBytesPerSecond: 100 * slowfs.Byte,
 }
 
+func TestLatestTime(t *testing.T) {
+	cases := []struct {
+		a    time.Time
+		b    time.Time
+		want time.Time
+	}{
+		{startTime, startTime, startTime},
+		{startTime, startTime.Add(time.Millisecond), startTime.Add(time.Millisecond)},
+		{startTime.Add(time.Millisecond), startTime, startTime.Add(time.Millisecond)},
+		{startTime.Add(-5 * time.Microsecond), startTime, startTime},
+	}
+
+	for _, c := range cases {
+		if got, want := latestTime(c.a, c.b), c.want; got != want {
+			t.Errorf("latestTime(%s, %s) = %s, want %s", c.a, c.b, got, want)
+		}
+	}
+}
+
 func TestComputeTimeFromThroughput(t *testing.T) {
 	cases := []struct {
 		numBytes       int64
@@ -34,7 +53,6 @@ func TestComputeTimeFromThroughput(t *testing.T) {
 				c.numBytes, c.bytesPerSecond, got, want)
 		}
 	}
-
 }
 
 func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
@@ -290,6 +308,31 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 						Path:      "a",
 					},
 					want: 0 * time.Millisecond,
+				},
+			},
+		},
+		{
+			desc: "device busy",
+			requests: []requestInvocation{
+				{
+					req: &Request{
+						Type:      ReadRequest,
+						Timestamp: startTime,
+						Path:      "a",
+						Start:     0,
+						Size:      1,
+					},
+					want: 110 * time.Millisecond,
+				},
+				{
+					req: &Request{
+						Type:      ReadRequest,
+						Timestamp: startTime,
+						Path:      "a",
+						Start:     1,
+						Size:      1,
+					},
+					want: 210 * time.Millisecond,
 				},
 			},
 		},
