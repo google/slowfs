@@ -16,7 +16,7 @@ type Scheduler struct {
 
 // New creates a new Scheduler using the given DeviceConfig to help compute how long requests
 // should take.
-func New(config slowfs.DeviceConfig) *Scheduler {
+func New(config *slowfs.DeviceConfig) *Scheduler {
 	dc := newDeviceContext(config)
 	scheduler := &Scheduler{
 		dc:             dc,

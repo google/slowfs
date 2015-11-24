@@ -86,6 +86,24 @@ func (sf *slowFile) Release() {
 	time.Sleep(opTime - time.Since(start))
 }
 
+func (sf *slowFile) Fsync(flags int) fuse.Status {
+	start := time.Now()
+	r := sf.File.Fsync(flags)
+	// TODO(edcourtney): How long should this take?
+	if r != fuse.OK {
+		return r
+	}
+
+	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.FsyncRequest,
+		Timestamp: start,
+		Path:      sf.path,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return r
+}
+
 // SlowFs is a FileSystem whose operations take amounts of time determined by an associated
 // Scheduler.
 type SlowFs struct {

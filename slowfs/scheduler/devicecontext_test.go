@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-var testDeviceConfig = slowfs.DeviceConfig{
-	SeekWindow:          4 * slowfs.Byte,
-	SeekTime:            10 * time.Millisecond,
-	ReadBytesPerSecond:  10 * slowfs.Byte,
-	WriteBytesPerSecond: 100 * slowfs.Byte,
-}
-
 func TestLatestTime(t *testing.T) {
 	cases := []struct {
 		a    time.Time
@@ -32,27 +25,6 @@ func TestLatestTime(t *testing.T) {
 	}
 }
 
-func TestComputeTimeFromThroughput(t *testing.T) {
-	cases := []struct {
-		numBytes       int64
-		bytesPerSecond int64
-		duration       time.Duration
-	}{
-		{1, 1, 1 * time.Second},
-		{0, 1, 0 * time.Second},
-		{1, 1000, 1 * time.Millisecond},
-		{1000, 1, 1000 * time.Second},
-		{3, 9, 333333333 * time.Nanosecond},
-	}
-
-	for _, c := range cases {
-		if got, want := computeTimeFromThroughput(c.numBytes, c.bytesPerSecond), c.duration; got != want {
-			t.Errorf("computeTimeFromThroughput(%d, %d) = %s, want %s",
-				c.numBytes, c.bytesPerSecond, got, want)
-		}
-	}
-}
-
 func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 	type requestInvocation struct {
 		req  *Request
@@ -60,11 +32,13 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 	}
 
 	cases := []struct {
-		desc     string
-		requests []requestInvocation
+		desc         string
+		deviceConfig *slowfs.DeviceConfig
+		requests     []requestInvocation
 	}{
 		{
-			desc: "sequential read",
+			desc:         "sequential read",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -89,7 +63,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "sequential write",
+			desc:         "sequential write",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -114,7 +89,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "backwards read",
+			desc:         "backwards read",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -139,7 +115,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "backwards write",
+			desc:         "backwards write",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -164,7 +141,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "spaced out read",
+			desc:         "spaced out read",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -199,7 +177,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "spaced out write",
+			desc:         "spaced out write",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -234,7 +213,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "multiple files read",
+			desc:         "multiple files read",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -259,7 +239,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "multiple files write",
+			desc:         "multiple files write",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -284,7 +265,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "open",
+			desc:         "open",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -297,7 +279,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "close",
+			desc:         "close",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -310,7 +293,8 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc: "device busy",
+			desc:         "device busy",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
 				{
 					req: &Request{
@@ -334,10 +318,44 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc:         "write back cache",
+			deviceConfig: writeBackCacheDeviceConfig,
+			requests: []requestInvocation{
+				{
+					req: &Request{
+						Type:      WriteRequest,
+						Timestamp: startTime,
+						Path:      "a",
+						Start:     0,
+						Size:      1000,
+					},
+					want: 10*time.Second + 10*time.Millisecond,
+				},
+				{
+					req: &Request{
+						Type:      WriteRequest,
+						Timestamp: startTime,
+						Path:      "a",
+						Start:     1000,
+						Size:      100,
+					},
+					want: 11*time.Second + 10*time.Millisecond,
+				},
+				{
+					req: &Request{
+						Type:      FsyncRequest,
+						Timestamp: startTime,
+						Path:      "a",
+					},
+					want: 22*time.Second + 20*time.Millisecond,
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {
-		dc := newDeviceContext(testDeviceConfig)
+		dc := newDeviceContext(c.deviceConfig)
 		for _, req := range c.requests {
 			if got, want := dc.computeTime(req.req), req.want; got != want {
 				t.Errorf("fail (%s) computeTime(%+v) = %s, want %s", c.desc, req.req, got, want)

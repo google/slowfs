@@ -11,6 +11,7 @@ const (
 	WriteRequest
 	OpenRequest
 	CloseRequest
+	FsyncRequest
 )
 
 // Request contains information for all types of requests.

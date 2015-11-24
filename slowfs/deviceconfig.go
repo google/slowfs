@@ -4,6 +4,21 @@ import (
 	"time"
 )
 
+// FsyncStrategy indicates which strategy to use for fsync simulation.
+type FsyncStrategy int
+
+const (
+	// NoFsync indicates a strategy where fsync takes zero time.
+	NoFsync FsyncStrategy = iota
+	// DumbFsync indicates a strategy where fsync takes ten seek times (chosen arbitrarily).
+	DumbFsync
+	// WriteBackCachedFsync indicates a simulation of write back cache. This means writes will take
+	// very little time, and writing back that data to disk will be simulated to happen during spare
+	// IO time. When fsync is called on a file, how much unwritten data remaining for that file
+	// determines how long the fsync takes.
+	WriteBackCachedFsync
+)
+
 // DeviceConfig is used to describe how a physical medium acts (e.g. rotational hard drive).
 type DeviceConfig struct {
 	// SeekWindow describes how many bytes ahead in a file we can access before considering
@@ -22,6 +37,40 @@ type DeviceConfig struct {
 	// RequestReorderMaxDelay denotes how much later a request can be by timestamp after a previous
 	// one and still be reordered before it.
 	RequestReorderMaxDelay time.Duration
+
+	// FsyncStrategy denotes which algorithm to use for modeling fsync.
+	FsyncStrategy FsyncStrategy
+}
+
+// WriteTime computes how long writing numBytes will take.
+func (dc *DeviceConfig) WriteTime(numBytes int64) time.Duration {
+	return computeTimeFromThroughput(numBytes, dc.WriteBytesPerSecond)
+}
+
+// ReadTime computes how long reading numBytes will take.
+func (dc *DeviceConfig) ReadTime(numBytes int64) time.Duration {
+	return computeTimeFromThroughput(numBytes, dc.ReadBytesPerSecond)
+}
+
+// WritableBytes computes how many bytes can be written in the given duration.
+func (dc *DeviceConfig) WritableBytes(duration time.Duration) int64 {
+	return computeBytesFromTime(duration, dc.WriteBytesPerSecond)
+}
+
+// ReadableBytes computes how many bytes can be read in the given duration.
+func (dc *DeviceConfig) ReadableBytes(duration time.Duration) int64 {
+	return computeBytesFromTime(duration, dc.ReadBytesPerSecond)
+}
+
+func computeTimeFromThroughput(numBytes, bytesPerSecond int64) time.Duration {
+	return time.Duration(float64(numBytes) / float64(bytesPerSecond) * float64(time.Second))
+}
+
+func computeBytesFromTime(duration time.Duration, bytesPerSecond int64) int64 {
+	if duration <= 0 {
+		return 0
+	}
+	return int64(float64(duration) / float64(time.Second) * float64(bytesPerSecond))
 }
 
 // HardDriveDeviceConfig is a basic model of a 7200rpm hard disk.
@@ -31,4 +80,5 @@ var HardDriveDeviceConfig = DeviceConfig{
 	ReadBytesPerSecond:     100 * Mebibyte,
 	WriteBytesPerSecond:    100 * Mebibyte,
 	RequestReorderMaxDelay: 100 * time.Microsecond,
+	FsyncStrategy:          WriteBackCachedFsync,
 }
