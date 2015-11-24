@@ -319,6 +319,42 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
+			desc:         "fast writes",
+			deviceConfig: fastWriteDeviceConfig,
+			requests: []requestInvocation{
+				{
+					req: &Request{
+						Type:      WriteRequest,
+						Timestamp: startTime,
+						Path:      "a",
+						Start:     0,
+						Size:      1,
+					},
+					want: 0 * time.Millisecond,
+				},
+				{
+					req: &Request{
+						Type:      WriteRequest,
+						Timestamp: startTime.Add(10 * time.Millisecond),
+						Path:      "a",
+						Start:     1,
+						Size:      1,
+					},
+					want: 0 * time.Millisecond,
+				},
+				{
+					req: &Request{
+						Type:      WriteRequest,
+						Timestamp: startTime,
+						Path:      "a",
+						Start:     10,
+						Size:      100,
+					},
+					want: 10 * time.Millisecond, // Busy until previous req finishes.
+				},
+			},
+		},
+		{
 			desc:         "write back cache",
 			deviceConfig: writeBackCacheDeviceConfig,
 			requests: []requestInvocation{
@@ -330,7 +366,7 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 						Start:     0,
 						Size:      1000,
 					},
-					want: 10*time.Second + 10*time.Millisecond,
+					want: 0 * time.Millisecond,
 				},
 				{
 					req: &Request{
@@ -340,7 +376,7 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 						Start:     1000,
 						Size:      100,
 					},
-					want: 11*time.Second + 10*time.Millisecond,
+					want: 0 * time.Millisecond,
 				},
 				{
 					req: &Request{
@@ -348,7 +384,7 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 						Timestamp: startTime,
 						Path:      "a",
 					},
-					want: 22*time.Second + 20*time.Millisecond,
+					want: 11*time.Second + 10*time.Millisecond,
 				},
 			},
 		},

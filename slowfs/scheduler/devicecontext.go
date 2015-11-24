@@ -59,7 +59,12 @@ func (dc *deviceContext) computeTime(req *Request) time.Duration {
 	case ReadRequest:
 		requestDuration = dc.computeSeekTime(req) + dc.deviceConfig.ReadTime(req.Size)
 	case WriteRequest:
-		requestDuration = dc.computeSeekTime(req) + dc.deviceConfig.WriteTime(req.Size)
+		switch dc.deviceConfig.WriteStrategy {
+		case slowfs.FastWrite:
+			// Leave at 0 seconds.
+		case slowfs.SimulateWrite:
+			requestDuration = dc.computeSeekTime(req) + dc.deviceConfig.WriteTime(req.Size)
+		}
 	case FsyncRequest:
 		switch dc.deviceConfig.FsyncStrategy {
 		case slowfs.DumbFsync:
@@ -99,8 +104,14 @@ func (dc *deviceContext) execute(req *Request) {
 		dc.lastAccessedFile = req.Path
 		dc.firstUnseenByte = req.Start + req.Size
 	case WriteRequest:
-		dc.lastAccessedFile = req.Path
-		dc.firstUnseenByte = req.Start + req.Size
+		switch dc.deviceConfig.WriteStrategy {
+		case slowfs.FastWrite:
+			// Fast writes don't affect things here.
+		case slowfs.SimulateWrite:
+			dc.lastAccessedFile = req.Path
+			dc.firstUnseenByte = req.Start + req.Size
+		}
+
 		if dc.writeBackCache != nil {
 			dc.writeBackCache.write(req.Path, req.Size)
 		}

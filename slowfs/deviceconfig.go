@@ -19,6 +19,19 @@ const (
 	WriteBackCachedFsync
 )
 
+// WriteStrategy indicates which strategy to use for write simulation.
+type WriteStrategy int
+
+const (
+	// FastWrite means writes will take zero time, as if they were cached.
+	// Useful in conjunction with WriteBackCachedFsync
+	FastWrite WriteStrategy = iota
+	// SimulateWrite means writes will act in the same way as reads -- that is,
+	// seeking if non-sequential, and being written out at the speed specified
+	// by WriteBytesPerSecond.
+	SimulateWrite
+)
+
 // DeviceConfig is used to describe how a physical medium acts (e.g. rotational hard drive).
 type DeviceConfig struct {
 	// SeekWindow describes how many bytes ahead in a file we can access before considering
@@ -40,6 +53,9 @@ type DeviceConfig struct {
 
 	// FsyncStrategy denotes which algorithm to use for modeling fsync.
 	FsyncStrategy FsyncStrategy
+
+	// WriteStrategy denotes which algorithm to use for modeling writes.
+	WriteStrategy WriteStrategy
 }
 
 // WriteTime computes how long writing numBytes will take.
@@ -81,4 +97,5 @@ var HardDriveDeviceConfig = DeviceConfig{
 	WriteBytesPerSecond:    100 * Mebibyte,
 	RequestReorderMaxDelay: 100 * time.Microsecond,
 	FsyncStrategy:          WriteBackCachedFsync,
+	WriteStrategy:          FastWrite,
 }
