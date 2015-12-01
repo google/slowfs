@@ -9,17 +9,19 @@ import (
 
 // Scheduler determines how long operations should take given a description of a physical medium.
 type Scheduler struct {
-	dc *deviceContext
-
-	requests chan *requestData
+	dc             *deviceContext
+	readWriteQueue *readWriteQueue
+	requests       chan *requestData
 }
 
 // New creates a new Scheduler using the given DeviceConfig to help compute how long requests
 // should take.
 func New(config slowfs.DeviceConfig) *Scheduler {
+	dc := newDeviceContext(config)
 	scheduler := &Scheduler{
-		dc:       newDeviceContext(config),
-		requests: make(chan *requestData, 10),
+		dc:             dc,
+		readWriteQueue: newReadWriteQueue(dc),
+		requests:       make(chan *requestData, 10),
 	}
 	go scheduler.serveRequests()
 	return scheduler
@@ -41,11 +43,26 @@ func (s *Scheduler) Schedule(req *Request) time.Duration {
 // Main event loop to serve requests.
 func (s *Scheduler) serveRequests() {
 	for {
-		reqData := <-s.requests
-		req, resp := reqData.req, reqData.responseChannel
-		reqDuration := s.dc.computeTime(req)
-		s.dc.execute(req)
+		select {
+		case reqData := <-s.requests:
+			req, resp := reqData.req, reqData.responseChannel
+			switch req.Type {
+			case ReadRequest, WriteRequest:
+				s.readWriteQueue.push(reqData)
+			default:
+				resp <- s.dc.computeTime(req)
+				s.dc.execute(req)
+			}
+		case <-s.readWriteQueue.responseChannel():
+			reqData := s.readWriteQueue.pop(time.Now())
+			if reqData != nil {
+				reqData.responseChannel <- s.dc.computeTime(reqData.req)
+				s.dc.execute(reqData.req)
+			}
+		}
 
-		resp <- reqDuration
+		// This needs to be called every loop, since executing a request can change how long a
+		// read or write request on the front of the queue would take.
+		s.readWriteQueue.scheduleResponse(time.Now())
 	}
 }

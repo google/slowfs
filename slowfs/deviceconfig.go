@@ -18,12 +18,17 @@ type DeviceConfig struct {
 
 	// ReadBytesPerSecond denotes how many bytes we can write per second.
 	WriteBytesPerSecond int64
+
+	// RequestReorderMaxDelay denotes how much later a request can be by timestamp after a previous
+	// one and still be reordered before it.
+	RequestReorderMaxDelay time.Duration
 }
 
 // HardDriveDeviceConfig is a basic model of a 7200rpm hard disk.
 var HardDriveDeviceConfig = DeviceConfig{
-	SeekWindow:          4 * Kibibyte,
-	SeekTime:            10 * time.Millisecond,
-	ReadBytesPerSecond:  100 * Mebibyte,
-	WriteBytesPerSecond: 100 * Mebibyte,
+	SeekWindow:             4 * Kibibyte,
+	SeekTime:               10 * time.Millisecond,
+	ReadBytesPerSecond:     100 * Mebibyte,
+	WriteBytesPerSecond:    100 * Mebibyte,
+	RequestReorderMaxDelay: 100 * time.Microsecond,
 }

@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-var startTime time.Time
-
 var testDeviceConfig = slowfs.DeviceConfig{
 	SeekWindow:          4 * slowfs.Byte,
 	SeekTime:            10 * time.Millisecond,
