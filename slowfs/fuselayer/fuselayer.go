@@ -118,6 +118,91 @@ func (sf *slowFile) Fsync(flags int) fuse.Status {
 	return r
 }
 
+func (sf *slowFile) Truncate(size uint64) fuse.Status {
+	start := time.Now()
+	r := sf.File.Truncate(size)
+	// TODO(edcourtney): How long should this take?
+	if r != fuse.OK {
+		return r
+	}
+
+	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return r
+}
+
+func (sf *slowFile) GetAttr(out *fuse.Attr) fuse.Status {
+	start := time.Now()
+	r := sf.File.GetAttr(out)
+	// TODO(edcourtney): How long should this take?
+	if r != fuse.OK {
+		return r
+	}
+
+	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return r
+}
+
+func (sf *slowFile) Chown(uid uint32, gid uint32) fuse.Status {
+	start := time.Now()
+	r := sf.File.Chown(uid, gid)
+	// TODO(edcourtney): How long should this take?
+	if r != fuse.OK {
+		return r
+	}
+
+	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return r
+}
+
+func (sf *slowFile) Chmod(perms uint32) fuse.Status {
+	start := time.Now()
+	r := sf.File.Chmod(perms)
+	// TODO(edcourtney): How long should this take?
+	if r != fuse.OK {
+		return r
+	}
+
+	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return r
+}
+
+func (sf *slowFile) Utimens(atime *time.Time, mtime *time.Time) fuse.Status {
+	start := time.Now()
+	r := sf.File.Utimens(atime, mtime)
+	// TODO(edcourtney): How long should this take?
+	if r != fuse.OK {
+		return r
+	}
+
+	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return r
+}
+
 // SlowFs is a FileSystem whose operations take amounts of time determined by an associated
 // Scheduler.
 type SlowFs struct {
@@ -151,11 +236,385 @@ func (sfs *SlowFs) Open(name string, flags uint32, context *fuse.Context) (nodef
 	}
 
 	opTime := sfs.scheduler.Schedule(&scheduler.Request{
-		Type:      scheduler.OpenRequest,
+		Type:      scheduler.MetadataRequest,
 		Timestamp: start,
-		Path:      slowFile.path,
 	})
 	time.Sleep(opTime - time.Since(start))
 
 	return slowFile, status
+}
+
+// GetAttr calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) GetAttr(name string, context *fuse.Context) (*fuse.Attr, fuse.Status) {
+	start := time.Now()
+	attr, status := sfs.FileSystem.GetAttr(name, context)
+	if status != fuse.OK {
+		return attr, status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return attr, status
+}
+
+// Chmod calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Chmod(name string, mode uint32, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Chmod(name, mode, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Chown calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Chown(name string, uid uint32, gid uint32, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Chown(name, uid, gid, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Utimens calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Utimens(name string, Atime *time.Time, Mtime *time.Time, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Utimens(name, Atime, Mtime, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Truncate calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Truncate(name string, size uint64, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Truncate(name, size, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Access calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Access(name string, mode uint32, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Access(name, mode, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Link calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Link(oldName string, newName string, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Link(oldName, newName, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Mkdir calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Mkdir(name string, mode uint32, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Mkdir(name, mode, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Mknod calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Mknod(name string, mode uint32, dev uint32, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Mknod(name, mode, dev, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Rename calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Rename(oldName string, newName string, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Rename(oldName, newName, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Rmdir calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Rmdir(name string, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Rmdir(name, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Unlink calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Unlink(name string, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Unlink(name, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// GetXAttr calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) GetXAttr(name string, attribute string, context *fuse.Context) ([]byte, fuse.Status) {
+	start := time.Now()
+	data, status := sfs.FileSystem.GetXAttr(name, attribute, context)
+	if status != fuse.OK {
+		return data, status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return data, status
+}
+
+// ListXAttr calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) ListXAttr(name string, context *fuse.Context) ([]string, fuse.Status) {
+	start := time.Now()
+	attributes, status := sfs.FileSystem.ListXAttr(name, context)
+	if status != fuse.OK {
+		return attributes, status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return attributes, status
+}
+
+// RemoveXAttr calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) RemoveXAttr(name string, attr string, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.RemoveXAttr(name, attr, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// SetXAttr calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) SetXAttr(name string, attr string, data []byte, flags int, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.SetXAttr(name, attr, data, flags, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Create calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Create(name string, flags uint32, mode uint32, context *fuse.Context) (nodefs.File, fuse.Status) {
+	start := time.Now()
+	file, status := sfs.FileSystem.Create(name, flags, mode, context)
+	if status != fuse.OK {
+		return file, status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return file, status
+}
+
+// OpenDir calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) OpenDir(name string, context *fuse.Context) ([]fuse.DirEntry, fuse.Status) {
+	start := time.Now()
+	stream, status := sfs.FileSystem.OpenDir(name, context)
+	if status != fuse.OK {
+		return stream, status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return stream, status
+}
+
+// Symlink calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Symlink(value string, linkName string, context *fuse.Context) fuse.Status {
+	start := time.Now()
+	status := sfs.FileSystem.Symlink(value, linkName, context)
+	if status != fuse.OK {
+		return status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return status
+}
+
+// Readlink calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) Readlink(name string, context *fuse.Context) (string, fuse.Status) {
+	start := time.Now()
+	f, status := sfs.FileSystem.Readlink(name, context)
+	if status != fuse.OK {
+		return f, status
+	}
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return f, status
+}
+
+// StatFs calls the underlying filesystem then sends a MetadataRequest and
+// waits how long it is told to.
+func (sfs *SlowFs) StatFs(name string) *fuse.StatfsOut {
+	start := time.Now()
+	out := sfs.FileSystem.StatFs(name)
+
+	opTime := sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.MetadataRequest,
+		Timestamp: start,
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return out
 }

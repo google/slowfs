@@ -126,6 +126,9 @@ type DeviceConfig struct {
 
 	// WriteStrategy denotes which algorithm to use for modeling writes.
 	WriteStrategy WriteStrategy
+
+	// MetadataOpTime denotes how long metadata operations (like chmod, chown, etc) should take.
+	MetadataOpTime time.Duration
 }
 
 // WriteTime computes how long writing numBytes will take.
@@ -168,4 +171,5 @@ var HardDriveDeviceConfig = DeviceConfig{
 	RequestReorderMaxDelay: 100 * time.Microsecond,
 	FsyncStrategy:          WriteBackCachedFsync,
 	WriteStrategy:          FastWrite,
+	MetadataOpTime:         10 * time.Millisecond,
 }

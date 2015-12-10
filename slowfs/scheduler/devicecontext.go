@@ -66,10 +66,10 @@ func (dc *deviceContext) computeTime(req *Request) time.Duration {
 	requestDuration := time.Duration(0)
 
 	switch req.Type {
-	case OpenRequest:
-		// Leave at 0 seconds.
-	case CloseRequest:
-		// Leave at 0 seconds.
+	// Handle metadata requests, plus metadata requests that have been factored out because we
+	// need separate handling for them.
+	case MetadataRequest, CloseRequest:
+		requestDuration = dc.deviceConfig.MetadataOpTime
 	case ReadRequest:
 		requestDuration = dc.computeSeekTime(req) + dc.deviceConfig.ReadTime(req.Size)
 	case WriteRequest:
@@ -105,7 +105,8 @@ func (dc *deviceContext) execute(req *Request) {
 	dc.busyUntil = req.Timestamp.Add(dc.computeTime(req))
 
 	switch req.Type {
-	case OpenRequest:
+	case MetadataRequest:
+		// Do nothing.
 	case CloseRequest:
 		if dc.writeBackCache != nil {
 			dc.writeBackCache.close(req.Path)

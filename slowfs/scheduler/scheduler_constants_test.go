@@ -29,6 +29,7 @@ var basicDeviceConfig = &slowfs.DeviceConfig{
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.SimulateWrite,
+	MetadataOpTime:         80 * time.Millisecond,
 }
 
 var fastWriteDeviceConfig = &slowfs.DeviceConfig{
@@ -39,6 +40,7 @@ var fastWriteDeviceConfig = &slowfs.DeviceConfig{
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.FastWrite,
+	MetadataOpTime:         80 * time.Millisecond,
 }
 
 var writeBackCacheDeviceConfig = &slowfs.DeviceConfig{
@@ -49,6 +51,7 @@ var writeBackCacheDeviceConfig = &slowfs.DeviceConfig{
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.WriteBackCachedFsync,
 	WriteStrategy:          slowfs.FastWrite,
+	MetadataOpTime:         80 * time.Millisecond,
 }
 
 var readWriteAsymmetricDeviceConfig = &slowfs.DeviceConfig{
@@ -59,6 +62,7 @@ var readWriteAsymmetricDeviceConfig = &slowfs.DeviceConfig{
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.SimulateWrite,
+	MetadataOpTime:         80 * time.Millisecond,
 }
 
 var notNiceNumbersDeviceConfig = &slowfs.DeviceConfig{
@@ -69,4 +73,5 @@ var notNiceNumbersDeviceConfig = &slowfs.DeviceConfig{
 	RequestReorderMaxDelay: 6*time.Millisecond + 244*time.Microsecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.SimulateWrite,
+	MetadataOpTime:         80 * time.Millisecond,
 }

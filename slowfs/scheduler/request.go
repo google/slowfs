@@ -26,6 +26,7 @@ const (
 	OpenRequest
 	CloseRequest
 	FsyncRequest
+	MetadataRequest
 )
 
 // Request contains information for all types of requests.

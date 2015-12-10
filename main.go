@@ -27,10 +27,13 @@ import (
 )
 
 func main() {
+	config := slowfs.HardDriveDeviceConfig
+
 	backingDir := flag.String("backing-dir", "", "directory to use as storage")
 	mountDir := flag.String("mount-dir", "", "directory to mount at")
 	fsyncStrategy := flag.String("fsync-strategy", "writebackcache", "choice of none/no, dumb, writebackcache/wbc")
 	writeStrategy := flag.String("write-strategy", "fast", "choice of fast, simulate")
+	metadataOpTime := flag.Duration("metadata-op-time", config.MetadataOpTime, "duration value (e.g. 10ms)")
 	flag.Parse()
 
 	if *backingDir == "" || *mountDir == "" {
@@ -52,8 +55,6 @@ func main() {
 	if *backingDir == *mountDir {
 		log.Fatalf("backing directory may not be the same as mount directory.")
 	}
-
-	config := slowfs.HardDriveDeviceConfig
 
 	switch *fsyncStrategy {
 	case "none", "no":
@@ -80,6 +81,12 @@ func main() {
 			"Write back cache is meant to simulate writes being cached in memory and taking minimal time, " +
 			"then being written back to disk later, either during spare IO time or at an fsync.")
 	}
+
+	if *metadataOpTime < 0 {
+		log.Fatalf("metadata-op-time cannot be negative.")
+	}
+
+	config.MetadataOpTime = *metadataOpTime
 
 	scheduler := scheduler.New(&config)
 	fs := pathfs.NewPathNodeFs(fuselayer.NewSlowFs(*backingDir, scheduler), nil)

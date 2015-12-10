@@ -279,20 +279,6 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 			},
 		},
 		{
-			desc:         "open",
-			deviceConfig: readWriteAsymmetricDeviceConfig,
-			requests: []requestInvocation{
-				{
-					req: &Request{
-						Type:      OpenRequest,
-						Timestamp: startTime,
-						Path:      "a",
-					},
-					want: 0 * time.Millisecond,
-				},
-			},
-		},
-		{
 			desc:         "close",
 			deviceConfig: readWriteAsymmetricDeviceConfig,
 			requests: []requestInvocation{
@@ -302,7 +288,7 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 						Timestamp: startTime,
 						Path:      "a",
 					},
-					want: 0 * time.Millisecond,
+					want: 80 * time.Millisecond,
 				},
 			},
 		},
@@ -329,6 +315,19 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 						Size:      1,
 					},
 					want: 210 * time.Millisecond,
+				},
+			},
+		},
+		{
+			desc:         "metadata",
+			deviceConfig: readWriteAsymmetricDeviceConfig,
+			requests: []requestInvocation{
+				{
+					req: &Request{
+						Type:      MetadataRequest,
+						Timestamp: startTime,
+					},
+					want: 80 * time.Millisecond,
 				},
 			},
 		},
