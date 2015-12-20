@@ -26,6 +26,7 @@ const (
 	OpenRequest
 	CloseRequest
 	FsyncRequest
+	AllocateRequest
 	MetadataRequest
 )
 

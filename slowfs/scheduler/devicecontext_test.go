@@ -401,6 +401,22 @@ func TestDeviceContext_ComputeTimeAndExecute(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc:         "allocate",
+			deviceConfig: basicDeviceConfig,
+			requests: []requestInvocation{
+				{
+					req: &Request{
+						Type:      AllocateRequest,
+						Timestamp: startTime,
+						Path:      "a",
+						Start:     5,
+						Size:      4123,
+					},
+					want: 4123*time.Millisecond + 10*time.Millisecond,
+				},
+			},
+		},
 	}
 
 	for _, c := range cases {

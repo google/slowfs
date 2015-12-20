@@ -280,7 +280,7 @@ func TestComputeWritableBytes(t *testing.T) {
 }
 
 func TestSliceShuffle(t *testing.T) {
-	a := []string{"9001", "dongers", "kek", "lol", "longcat", "mfw", "orz", "raise", "topkek", "your"}
+	a := []string{"brown", "dog", "fox", "hello", "jumped", "lazy", "over", "quick", "the", "the", "world"}
 	acopy := make([]string, len(a))
 	copy(acopy, a)
 

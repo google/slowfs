@@ -203,6 +203,24 @@ func (sf *slowFile) Utimens(atime *time.Time, mtime *time.Time) fuse.Status {
 	return r
 }
 
+func (sf *slowFile) Allocate(off uint64, size uint64, mode uint32) fuse.Status {
+	start := time.Now()
+	r := sf.File.Allocate(off, size, mode)
+	// TODO(edcourtney): How long should this take?
+	if r != fuse.OK {
+		return r
+	}
+
+	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
+		Type:      scheduler.AllocateRequest,
+		Timestamp: start,
+		Size:      int64(size),
+	})
+	time.Sleep(opTime - time.Since(start))
+
+	return r
+}
+
 // SlowFs is a FileSystem whose operations take amounts of time determined by an associated
 // Scheduler.
 type SlowFs struct {

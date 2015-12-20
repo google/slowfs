@@ -117,6 +117,10 @@ type DeviceConfig struct {
 	// ReadBytesPerSecond denotes how many bytes we can write per second.
 	WriteBytesPerSecond int64
 
+	// AllocateBytesPerSecond denotes how many bytes we can allocate using
+	// fallocate per second.
+	AllocateBytesPerSecond int64
+
 	// RequestReorderMaxDelay denotes how much later a request can be by timestamp after a previous
 	// one and still be reordered before it.
 	RequestReorderMaxDelay time.Duration
@@ -139,6 +143,11 @@ func (dc *DeviceConfig) WriteTime(numBytes int64) time.Duration {
 // ReadTime computes how long reading numBytes will take.
 func (dc *DeviceConfig) ReadTime(numBytes int64) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.ReadBytesPerSecond)
+}
+
+// AllocateTime computes how long allocating numBytes will take.
+func (dc *DeviceConfig) AllocateTime(numBytes int64) time.Duration {
+	return computeTimeFromThroughput(numBytes, dc.AllocateBytesPerSecond)
 }
 
 // WritableBytes computes how many bytes can be written in the given duration.
@@ -164,10 +173,13 @@ func computeBytesFromTime(duration time.Duration, bytesPerSecond int64) int64 {
 
 // HardDriveDeviceConfig is a basic model of a 7200rpm hard disk.
 var HardDriveDeviceConfig = DeviceConfig{
-	SeekWindow:             4 * Kibibyte,
-	SeekTime:               10 * time.Millisecond,
-	ReadBytesPerSecond:     100 * Mebibyte,
-	WriteBytesPerSecond:    100 * Mebibyte,
+	SeekWindow:          4 * Kibibyte,
+	SeekTime:            10 * time.Millisecond,
+	ReadBytesPerSecond:  100 * Mebibyte,
+	WriteBytesPerSecond: 100 * Mebibyte,
+	// Default to 4096 times faster than writing, since ext4 block sizes are
+	// 4 KiB.
+	AllocateBytesPerSecond: 4096 * 100 * Mebibyte,
 	RequestReorderMaxDelay: 100 * time.Microsecond,
 	FsyncStrategy:          WriteBackCachedFsync,
 	WriteStrategy:          FastWrite,
