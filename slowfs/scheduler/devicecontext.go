@@ -32,7 +32,7 @@ type deviceContext struct {
 
 	// For the last accessed file, record the offset of the first byte we have not accessed.
 	// This is used to determine if reads are sequential or not.
-	firstUnseenByte int64
+	firstUnseenByte slowfs.NumBytes
 
 	// Accesses to different files are assumed to be non-sequential reads.
 	lastAccessedFile string

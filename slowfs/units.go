@@ -14,15 +14,26 @@
 
 package slowfs
 
+// NumBytes is used for storing a number of bytes or offsets.
+type NumBytes int64
+
 // Some standard data sizes.
 const (
-	Byte     int64 = 1
-	Kilobyte       = 1000 * Byte
-	Megabyte       = 1000 * Kilobyte
-	Gigabyte       = 1000 * Megabyte
-	Terabyte       = 1000 * Gigabyte
-	Kibibyte       = 1024 * Byte
-	Mebibyte       = 1024 * Kibibyte
-	Gibibyte       = 1024 * Mebibyte
-	Tebibyte       = 1024 * Gibibyte
+	Byte     NumBytes = 1
+	Kilobyte          = 1000 * Byte
+	Megabyte          = 1000 * Kilobyte
+	Gigabyte          = 1000 * Megabyte
+	Terabyte          = 1000 * Gigabyte
+	Kibibyte          = 1024 * Byte
+	Mebibyte          = 1024 * Kibibyte
+	Gibibyte          = 1024 * Mebibyte
+	Tebibyte          = 1024 * Gibibyte
 )
+
+// NumBytesMin returns the smaller of the two passed NumBytes values.
+func NumBytesMin(a, b NumBytes) NumBytes {
+	if a > b {
+		return b
+	}
+	return a
+}

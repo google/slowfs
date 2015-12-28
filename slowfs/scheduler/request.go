@@ -14,7 +14,10 @@
 
 package scheduler
 
-import "time"
+import (
+	"slowfs/slowfs"
+	"time"
+)
 
 // RequestType denotes what type a request is.
 type RequestType int64
@@ -35,6 +38,6 @@ type Request struct {
 	Type      RequestType
 	Timestamp time.Time
 	Path      string
-	Start     int64
-	Size      int64
+	Start     slowfs.NumBytes
+	Size      slowfs.NumBytes
 }

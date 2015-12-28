@@ -22,8 +22,8 @@ import (
 
 func TestComputeTimeFromThroughput(t *testing.T) {
 	cases := []struct {
-		numBytes       int64
-		bytesPerSecond int64
+		numBytes       NumBytes
+		bytesPerSecond NumBytes
 		duration       time.Duration
 	}{
 		{1, 1, 1 * time.Second},
@@ -44,8 +44,8 @@ func TestComputeTimeFromThroughput(t *testing.T) {
 func TestComputeBytesFromTime(t *testing.T) {
 	cases := []struct {
 		duration       time.Duration
-		bytesPerSecond int64
-		want           int64
+		bytesPerSecond NumBytes
+		want           NumBytes
 	}{
 		{time.Second, 1, 1},
 		{time.Second, 1000, 1000},

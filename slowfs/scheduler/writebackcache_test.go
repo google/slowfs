@@ -25,8 +25,8 @@ import (
 func TestWriteBackCache_Write(t *testing.T) {
 	cases := []struct {
 		path     string
-		numBytes int64
-		want     int64
+		numBytes slowfs.NumBytes
+		want     slowfs.NumBytes
 	}{{"a", 101, 101}, {"b", 102, 102}, {"c", 0, 0}, {"c", 0, 0}, {"c", 1, 1}, {"c", 5, 6}, {"a", 1, 102}, {"b", 102, 204}}
 
 	writeBackCache := newWriteBackCache(basicDeviceConfig)
@@ -41,8 +41,8 @@ func TestWriteBackCache_Write(t *testing.T) {
 func TestWriteBackCache_Close(t *testing.T) {
 	cases := []struct {
 		path     string
-		numBytes int64
-		want     int64
+		numBytes slowfs.NumBytes
+		want     slowfs.NumBytes
 	}{{"a", 101, 101}, {"b", 102, 203}, {"c", 0, 203}, {"c", 0, 203}, {"c", 1, 204}, {"c", 5, 209}, {"a", 1, 210}, {"b", 102, 312}}
 
 	writeBackCache := newWriteBackCache(basicDeviceConfig)
@@ -50,7 +50,7 @@ func TestWriteBackCache_Close(t *testing.T) {
 		writeBackCache.write(c.path, c.numBytes)
 		writeBackCache.close(c.path)
 
-		if got, want := writeBackCache.getUnwrittenBytes(c.path), int64(0); got != want {
+		if got, want := writeBackCache.getUnwrittenBytes(c.path), slowfs.NumBytes(0); got != want {
 			t.Errorf("getUnwrittenBytes(%s) = %d, want %d", c.path, got, want)
 		}
 		if got, want := writeBackCache.orphanedUnwrittenBytes, c.want; got != want {
@@ -62,12 +62,12 @@ func TestWriteBackCache_Close(t *testing.T) {
 func TestWriteBackCache_WriteBack(t *testing.T) {
 	type writeInvocation struct {
 		path        string
-		numBytes    int64
+		numBytes    slowfs.NumBytes
 		shouldClose bool
 	}
 	type writeBackInvocation struct {
 		duration      time.Duration
-		wantRemaining int64
+		wantRemaining slowfs.NumBytes
 	}
 	cases := []struct {
 		desc       string
@@ -148,10 +148,10 @@ func TestWriteBackCache_WriteBackBytesForFile(t *testing.T) {
 	cases := []struct {
 		desc          string
 		deviceConfig  *slowfs.DeviceConfig
-		numBytes      int64
+		numBytes      slowfs.NumBytes
 		duration      time.Duration
 		wantDuration  time.Duration
-		wantRemaining int64
+		wantRemaining slowfs.NumBytes
 	}{
 		{
 			desc:          "no time to seek",
@@ -232,31 +232,12 @@ func TestWriteBackCache_WriteBackBytesForFile(t *testing.T) {
 	}
 }
 
-func TestInt64Min(t *testing.T) {
-	cases := []struct {
-		a    int64
-		b    int64
-		want int64
-	}{
-		{1, 1, 1},
-		{100, -12, -12},
-		{100, 101, 100},
-		{0, 1, 0},
-	}
-
-	for _, c := range cases {
-		if got, want := int64Min(c.a, c.b), c.want; got != want {
-			t.Errorf("int64Min(%d, %d) = %d, want %d", c.a, c.b, got, want)
-		}
-	}
-}
-
 func TestComputeWritableBytes(t *testing.T) {
 	cases := []struct {
 		duration       time.Duration
-		bytesPerSecond int64
+		bytesPerSecond slowfs.NumBytes
 		seekTime       time.Duration
-		want           int64
+		want           slowfs.NumBytes
 	}{
 		{time.Second, 1, 0, 1},
 		{time.Second, 1000, 0, 1000},

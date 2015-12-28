@@ -106,20 +106,20 @@ func ParseWriteStrategyFromString(s string) (WriteStrategy, error) {
 type DeviceConfig struct {
 	// SeekWindow describes how many bytes ahead in a file we can access before considering
 	// it a seek.
-	SeekWindow int64
+	SeekWindow NumBytes
 
 	// SeekTime denotes the average time of a seek.
 	SeekTime time.Duration
 
 	// ReadBytesPerSecond denotes how many bytes we can read per second.
-	ReadBytesPerSecond int64
+	ReadBytesPerSecond NumBytes
 
 	// ReadBytesPerSecond denotes how many bytes we can write per second.
-	WriteBytesPerSecond int64
+	WriteBytesPerSecond NumBytes
 
 	// AllocateBytesPerSecond denotes how many bytes we can allocate using
 	// fallocate per second.
-	AllocateBytesPerSecond int64
+	AllocateBytesPerSecond NumBytes
 
 	// RequestReorderMaxDelay denotes how much later a request can be by timestamp after a previous
 	// one and still be reordered before it.
@@ -136,39 +136,39 @@ type DeviceConfig struct {
 }
 
 // WriteTime computes how long writing numBytes will take.
-func (dc *DeviceConfig) WriteTime(numBytes int64) time.Duration {
+func (dc *DeviceConfig) WriteTime(numBytes NumBytes) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.WriteBytesPerSecond)
 }
 
 // ReadTime computes how long reading numBytes will take.
-func (dc *DeviceConfig) ReadTime(numBytes int64) time.Duration {
+func (dc *DeviceConfig) ReadTime(numBytes NumBytes) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.ReadBytesPerSecond)
 }
 
 // AllocateTime computes how long allocating numBytes will take.
-func (dc *DeviceConfig) AllocateTime(numBytes int64) time.Duration {
+func (dc *DeviceConfig) AllocateTime(numBytes NumBytes) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.AllocateBytesPerSecond)
 }
 
 // WritableBytes computes how many bytes can be written in the given duration.
-func (dc *DeviceConfig) WritableBytes(duration time.Duration) int64 {
+func (dc *DeviceConfig) WritableBytes(duration time.Duration) NumBytes {
 	return computeBytesFromTime(duration, dc.WriteBytesPerSecond)
 }
 
 // ReadableBytes computes how many bytes can be read in the given duration.
-func (dc *DeviceConfig) ReadableBytes(duration time.Duration) int64 {
+func (dc *DeviceConfig) ReadableBytes(duration time.Duration) NumBytes {
 	return computeBytesFromTime(duration, dc.ReadBytesPerSecond)
 }
 
-func computeTimeFromThroughput(numBytes, bytesPerSecond int64) time.Duration {
+func computeTimeFromThroughput(numBytes, bytesPerSecond NumBytes) time.Duration {
 	return time.Duration(float64(numBytes) / float64(bytesPerSecond) * float64(time.Second))
 }
 
-func computeBytesFromTime(duration time.Duration, bytesPerSecond int64) int64 {
+func computeBytesFromTime(duration time.Duration, bytesPerSecond NumBytes) NumBytes {
 	if duration <= 0 {
 		return 0
 	}
-	return int64(float64(duration) / float64(time.Second) * float64(bytesPerSecond))
+	return NumBytes(float64(duration) / float64(time.Second) * float64(bytesPerSecond))
 }
 
 // HardDriveDeviceConfig is a basic model of a 7200rpm hard disk.
