@@ -14,6 +14,13 @@
 
 package slowfs
 
+import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+)
+
 // NumBytes is used for storing a number of bytes or offsets.
 type NumBytes int64
 
@@ -36,4 +43,75 @@ func NumBytesMin(a, b NumBytes) NumBytes {
 		return b
 	}
 	return a
+}
+
+func (n NumBytes) String() string {
+	var base NumBytes
+	var suffix string
+	switch {
+	case n >= Terabyte:
+		base, suffix = Terabyte, "TB"
+	case n >= Gigabyte:
+		base, suffix = Gigabyte, "GB"
+	case n >= Megabyte:
+		base, suffix = Megabyte, "MB"
+	case n >= Kilobyte:
+		base, suffix = Kilobyte, "KB"
+	default:
+		base, suffix = 1, "B"
+	}
+
+	var strRep string
+	if n%base == 0 {
+		strRep = fmt.Sprintf("%d%s", n/base, suffix)
+	} else {
+		strRep = fmt.Sprintf("%.2f%s", float64(n)/float64(base), suffix)
+	}
+
+	return fmt.Sprintf("%s (%d)", strRep, int64(n))
+}
+
+func parseSuffix(suffix string) (NumBytes, error) {
+	switch strings.ToLower(suffix) {
+	case "b":
+		return Byte, nil
+	case "kb":
+		return Kilobyte, nil
+	case "mb":
+		return Megabyte, nil
+	case "gb":
+		return Gigabyte, nil
+	case "tb":
+		return Terabyte, nil
+	case "kib":
+		return Kibibyte, nil
+	case "mib":
+		return Mebibyte, nil
+	case "gib":
+		return Gibibyte, nil
+	case "tib":
+		return Tebibyte, nil
+	default:
+		return 0, fmt.Errorf("unrecognised size suffix %s", suffix)
+	}
+}
+
+// ParseNumBytesFromString parses a string of the form "<number><suffix>" to a NumBytes type.
+// For example, "12KB", "43.11KiB", "0B", "33TiB".
+func ParseNumBytesFromString(s string) (NumBytes, error) {
+	s = strings.ToLower(s)
+	// Byte, Kilo, Mega, Giga, Tera
+	splitIdx := strings.IndexAny(s, "bkmgt")
+	if splitIdx == -1 {
+		return 0, errors.New("missing suffix for size")
+	}
+	num, err := strconv.ParseFloat(strings.TrimSpace(s[:splitIdx]), 64)
+	if err != nil {
+		return 0, err
+	}
+	suffix, err := parseSuffix(strings.TrimSpace(s[splitIdx:]))
+	if err != nil {
+		return 0, err
+	}
+	return NumBytes(num * float64(suffix)), nil
 }
