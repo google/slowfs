@@ -16,7 +16,9 @@ package slowfs
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -252,6 +254,44 @@ func ParseDeviceConfigsFromJSON(data []byte) ([]*DeviceConfig, error) {
 	return dcs, nil
 }
 
+// Validate decides whether a device config is valid or not. If a device config has fields that
+// don't make sense (like negative delays), it will return an error. If there are field combinations
+// that /probably/ don't make sense it will print a warning message.
+func (dc *DeviceConfig) Validate() error {
+	if dc.SeekWindow < 0 {
+		return errors.New("SeekWindow cannot be negative.")
+	}
+	if dc.SeekTime < 0 {
+		return errors.New("SeekTime cannot be negative.")
+	}
+	if dc.ReadBytesPerSecond <= 0 {
+		return errors.New("ReadBytesPerSecond cannot be non-positive.")
+	}
+	if dc.WriteBytesPerSecond <= 0 {
+		return errors.New("WriteBytesPerSecond cannot be non-positive.")
+	}
+	if dc.AllocateBytesPerSecond <= 0 {
+		return errors.New("AllocateBytesPerSecond cannot be non-positive.")
+	}
+	if dc.RequestReorderMaxDelay < 0 {
+		return errors.New("RequestReorderMaxDelay cannot be negative.")
+	}
+	if dc.RequestReorderMaxDelay > 500*time.Microsecond {
+		log.Println("setting RequestReorderMaxDelay to >500us is probably not what you want")
+	}
+	if dc.MetadataOpTime < 0 {
+		return errors.New("MetadataOpTime cannot be negative.")
+	}
+
+	if dc.WriteStrategy == SimulateWrite && dc.FsyncStrategy == WriteBackCachedFsync {
+		log.Println("setting both simulated writes and write back cache is probably not what you want. " +
+			"Write back cache is meant to simulate writes being cached in memory and taking minimal time, " +
+			"then being written back to disk later, either during spare IO time or at an fsync.")
+	}
+
+	return nil
+}
+
 // WriteTime computes how long writing numBytes will take.
 func (dc *DeviceConfig) WriteTime(numBytes NumBytes) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.WriteBytesPerSecond)
@@ -288,6 +328,9 @@ func computeBytesFromTime(duration time.Duration, bytesPerSecond NumBytes) NumBy
 	return NumBytes(float64(duration) / float64(time.Second) * float64(bytesPerSecond))
 }
 
+// Below follows the list of preset device configurations. If you add configurations, please
+// update the tests to Validate() them.
+
 // HDD7200RpmDeviceConfig is a basic model of a 7200rpm hard disk.
 var HDD7200RpmDeviceConfig = DeviceConfig{
 	Name:                "hdd7200rpm",
@@ -298,7 +341,7 @@ var HDD7200RpmDeviceConfig = DeviceConfig{
 	// Default to 4096 times faster than writing, since ext4 block sizes are
 	// 4 KiB.
 	AllocateBytesPerSecond: 4096 * 100 * Mebibyte,
-	RequestReorderMaxDelay: 100 * time.Microsecond,
+	RequestReorderMaxDelay: 1000 * time.Microsecond,
 	FsyncStrategy:          WriteBackCachedFsync,
 	WriteStrategy:          FastWrite,
 	MetadataOpTime:         10 * time.Millisecond,

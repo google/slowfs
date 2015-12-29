@@ -329,3 +329,101 @@ func TestParseDeviceConfigsFromJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestDeviceConfig_Validate(t *testing.T) {
+	cases := []struct {
+		deviceConfig *DeviceConfig
+		shouldErr    bool
+	}{
+		{
+			&DeviceConfig{
+				ReadBytesPerSecond:     1 * Byte,
+				WriteBytesPerSecond:    1 * Byte,
+				AllocateBytesPerSecond: 1 * Byte,
+			},
+			false,
+		},
+		{
+			&DeviceConfig{
+				ReadBytesPerSecond:     0 * Byte,
+				WriteBytesPerSecond:    1 * Byte,
+				AllocateBytesPerSecond: 1 * Byte,
+			},
+			true,
+		},
+		{
+			&DeviceConfig{
+				ReadBytesPerSecond:     1 * Byte,
+				WriteBytesPerSecond:    0 * Byte,
+				AllocateBytesPerSecond: 1 * Byte,
+			},
+			true,
+		},
+		{
+			&DeviceConfig{
+				ReadBytesPerSecond:     1 * Byte,
+				WriteBytesPerSecond:    1 * Byte,
+				AllocateBytesPerSecond: 0 * Byte,
+			},
+			true,
+		},
+		{
+			&DeviceConfig{
+				SeekWindow:             -1 * Byte,
+				ReadBytesPerSecond:     1 * Byte,
+				WriteBytesPerSecond:    1 * Byte,
+				AllocateBytesPerSecond: 1 * Byte,
+			},
+			true,
+		},
+		{
+			&DeviceConfig{
+				SeekTime:               -1,
+				ReadBytesPerSecond:     1 * Byte,
+				WriteBytesPerSecond:    1 * Byte,
+				AllocateBytesPerSecond: 1 * Byte,
+			},
+			true,
+		},
+		{
+			&DeviceConfig{
+				RequestReorderMaxDelay: -1,
+				ReadBytesPerSecond:     1 * Byte,
+				WriteBytesPerSecond:    1 * Byte,
+				AllocateBytesPerSecond: 1 * Byte,
+			},
+			true,
+		},
+		{
+			&DeviceConfig{
+				MetadataOpTime:         -1,
+				ReadBytesPerSecond:     1 * Byte,
+				WriteBytesPerSecond:    1 * Byte,
+				AllocateBytesPerSecond: 1 * Byte,
+			},
+			true,
+		},
+	}
+
+	for _, c := range cases {
+		err := c.deviceConfig.Validate()
+		var expectedErr error
+		if c.shouldErr {
+			expectedErr = errors.New("an error")
+		}
+
+		if c.shouldErr != (err != nil) {
+			t.Errorf("%s.Validate() = %v, want %v", c.deviceConfig, err, expectedErr)
+		}
+	}
+}
+
+func TestDeviceConfigLiteralsValid(t *testing.T) {
+	cases := []DeviceConfig{HDD7200RpmDeviceConfig}
+
+	for _, c := range cases {
+		if c.Validate() != nil {
+			t.Errorf("invalid device config preset %s", &c)
+		}
+	}
+}

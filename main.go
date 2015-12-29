@@ -109,10 +109,9 @@ func main() {
 		}
 	}
 
-	if config.WriteStrategy == slowfs.SimulateWrite && config.FsyncStrategy == slowfs.WriteBackCachedFsync {
-		log.Printf("setting both simulated writes and write back cache is probably not what you want. " +
-			"Write back cache is meant to simulate writes being cached in memory and taking minimal time, " +
-			"then being written back to disk later, either during spare IO time or at an fsync.")
+	err = config.Validate()
+	if err != nil {
+		log.Fatalf("error validating config: %s", err)
 	}
 
 	fmt.Printf("using config: %s\n", config)
