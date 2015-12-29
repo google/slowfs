@@ -111,3 +111,50 @@ func TestParseFsyncStrategyFromString(t *testing.T) {
 		}
 	}
 }
+
+func TestWriteStrategy_String(t *testing.T) {
+	cases := []struct {
+		writeStrategy WriteStrategy
+		want          string
+	}{
+		{FastWrite, "FastWrite"},
+		{SimulateWrite, "SimulateWrite"},
+		{12345, "unknown write strategy"},
+	}
+
+	for _, c := range cases {
+		if got, want := c.writeStrategy.String(), c.want; got != want {
+			t.Errorf("%d.String() = %s, want %s", c.writeStrategy, got, want)
+		}
+	}
+}
+
+func TestParseWriteStrategyFromString(t *testing.T) {
+	cases := []struct {
+		strWriteStrategy string
+		want             WriteStrategy
+		shouldErr        bool
+	}{
+		{"fAstWrite", FastWrite, false},
+		{"fast", FastWrite, false},
+		{"sImUlAte", SimulateWrite, false},
+		{"sImUlateWrite", SimulateWrite, false},
+		{"asdfasdf", 0, true},
+	}
+
+	for _, c := range cases {
+		got, err := ParseWriteStrategyFromString(c.strWriteStrategy)
+		var expectedErr error
+		if c.shouldErr {
+			expectedErr = errors.New("expected an error")
+		}
+
+		if got != c.want {
+			t.Errorf("ParseWriteStrategyFromString(%s) = %s, want %s", c.strWriteStrategy, got, c.want)
+		}
+
+		if c.shouldErr != (err != nil) {
+			t.Errorf("ParseWriteStrategyFromString(%s) = _, %v, want _, %v", c.strWriteStrategy, err, expectedErr)
+		}
+	}
+}

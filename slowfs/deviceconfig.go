@@ -77,6 +77,31 @@ const (
 	SimulateWrite
 )
 
+func (w WriteStrategy) String() string {
+	switch w {
+	case FastWrite:
+		return "FastWrite"
+	case SimulateWrite:
+		return "SimulateWrite"
+	default:
+		return "unknown write strategy"
+	}
+}
+
+// ParseWriteStrategyFromString parses a WriteStrategy from the given string. This function is
+// case insensitive, and also accepts synonyms for each WriteStrategy. For example, fastwrite and
+// fast both map to the FastWrite strategy.
+func ParseWriteStrategyFromString(s string) (WriteStrategy, error) {
+	switch strings.ToLower(s) {
+	case "fastwrite", "fast":
+		return FastWrite, nil
+	case "simulatewrite", "simulate":
+		return SimulateWrite, nil
+	default:
+		return 0, fmt.Errorf("unknown write strategy %s", s)
+	}
+}
+
 // DeviceConfig is used to describe how a physical medium acts (e.g. rotational hard drive).
 type DeviceConfig struct {
 	// SeekWindow describes how many bytes ahead in a file we can access before considering
