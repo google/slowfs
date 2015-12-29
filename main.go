@@ -16,24 +16,33 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"path/filepath"
 	"slowfs/slowfs"
 	"slowfs/slowfs/fuselayer"
 	"slowfs/slowfs/scheduler"
+	"time"
 
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
 )
 
 func main() {
-	config := slowfs.HardDriveDeviceConfig
+	configs := map[string]*slowfs.DeviceConfig{
+		slowfs.HDD7200RpmDeviceConfig.Name: &slowfs.HDD7200RpmDeviceConfig,
+	}
 
 	backingDir := flag.String("backing-dir", "", "directory to use as storage")
 	mountDir := flag.String("mount-dir", "", "directory to mount at")
-	fsyncStrategy := flag.String("fsync-strategy", "writebackcache", "choice of none/no, dumb, writebackcache/wbc")
-	writeStrategy := flag.String("write-strategy", "fast", "choice of fast, simulate")
-	metadataOpTime := flag.Duration("metadata-op-time", config.MetadataOpTime, "duration value (e.g. 10ms)")
+
+	configFile := flag.String("config-file", "", "path to config file listing device configurations")
+	configName := flag.String("config-name", "hdd7200rpm", "which config to use (built-ins: hdd7200rpm)")
+
+	fsyncStrategy := flag.String("fsync-strategy", "", "choice of none/no, dumb, writebackcache/wbc")
+	writeStrategy := flag.String("write-strategy", "", "choice of fast, simulate")
+	metadataOpTime := flag.String("metadata-op-time", "", "duration value (e.g. 10ms)")
 	flag.Parse()
 
 	if *backingDir == "" || *mountDir == "" {
@@ -56,24 +65,48 @@ func main() {
 		log.Fatalf("backing directory may not be the same as mount directory.")
 	}
 
-	switch *fsyncStrategy {
-	case "none", "no":
-		config.FsyncStrategy = slowfs.NoFsync
-	case "dumb":
-		config.FsyncStrategy = slowfs.DumbFsync
-	case "writebackcache", "wbc":
-		config.FsyncStrategy = slowfs.WriteBackCachedFsync
-	default:
-		log.Fatalf("unknown fsync strategy %s.", *fsyncStrategy)
+	if *configFile != "" {
+		data, err := ioutil.ReadFile(*configFile)
+		if err != nil {
+			log.Fatalf("couldn't read config file %s: %s", *configFile, err)
+		}
+		dcs, err := slowfs.ParseDeviceConfigsFromJSON(data)
+		if err != nil {
+			log.Fatalf("couldn't parse config file %s: %s", *configFile, err)
+		}
+		for _, dc := range dcs {
+			if _, ok := configs[dc.Name]; ok {
+				log.Fatalf("duplicate device config with name '%s'", dc.Name)
+			}
+			configs[dc.Name] = dc
+		}
 	}
 
-	switch *writeStrategy {
-	case "fast":
-		config.WriteStrategy = slowfs.FastWrite
-	case "simulate":
-		config.WriteStrategy = slowfs.SimulateWrite
-	default:
-		log.Fatalf("unknown write strategy %s.", *writeStrategy)
+	config, ok := configs[*configName]
+
+	if !ok {
+		log.Fatalf("unknown config %s", *configName)
+	}
+
+	if *fsyncStrategy != "" {
+		config.FsyncStrategy, err = slowfs.ParseFsyncStrategyFromString(*fsyncStrategy)
+		if err != nil {
+			log.Fatalf("flag fsync-strategy: %s", err)
+		}
+	}
+
+	if *writeStrategy != "" {
+		config.WriteStrategy, err = slowfs.ParseWriteStrategyFromString(*writeStrategy)
+		if err != nil {
+			log.Fatalf("flag write-strategy: %s", err)
+		}
+	}
+
+	if *metadataOpTime != "" {
+		config.MetadataOpTime, err = time.ParseDuration(*metadataOpTime)
+		if err != nil {
+			log.Fatalf("flag metadata-op-time: %s", err)
+		}
 	}
 
 	if config.WriteStrategy == slowfs.SimulateWrite && config.FsyncStrategy == slowfs.WriteBackCachedFsync {
@@ -82,13 +115,8 @@ func main() {
 			"then being written back to disk later, either during spare IO time or at an fsync.")
 	}
 
-	if *metadataOpTime < 0 {
-		log.Fatalf("metadata-op-time cannot be negative.")
-	}
-
-	config.MetadataOpTime = *metadataOpTime
-
-	scheduler := scheduler.New(&config)
+	fmt.Printf("using config: %s\n", config)
+	scheduler := scheduler.New(config)
 	fs := pathfs.NewPathNodeFs(fuselayer.NewSlowFs(*backingDir, scheduler), nil)
 	server, _, err := nodefs.MountRoot(*mountDir, fs.Root(), nil)
 	if err != nil {

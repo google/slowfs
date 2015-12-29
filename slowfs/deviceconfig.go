@@ -15,6 +15,7 @@
 package slowfs
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -104,6 +105,10 @@ func ParseWriteStrategyFromString(s string) (WriteStrategy, error) {
 
 // DeviceConfig is used to describe how a physical medium acts (e.g. rotational hard drive).
 type DeviceConfig struct {
+	// Name is the name of this configuration. This is used for selecting on the command line which
+	// configuration to use.
+	Name string
+
 	// SeekWindow describes how many bytes ahead in a file we can access before considering
 	// it a seek.
 	SeekWindow NumBytes
@@ -133,6 +138,118 @@ type DeviceConfig struct {
 
 	// MetadataOpTime denotes how long metadata operations (like chmod, chown, etc) should take.
 	MetadataOpTime time.Duration
+}
+
+func (dc *DeviceConfig) String() string {
+	return fmt.Sprintf(`%s:
+  %-22s %s
+  %-22s %s
+  %-22s %s
+  %-22s %s
+  %-22s %s
+  %-22s %s
+  %-22s %s
+  %-22s %s
+  %-22s %s`,
+		dc.Name, "SeekWindow", dc.SeekWindow, "SeekTime", dc.SeekTime,
+		"ReadBytesPerSecond", dc.ReadBytesPerSecond, "WriteBytesPerSecond", dc.WriteBytesPerSecond,
+		"AllocateBytesPerSecond", dc.AllocateBytesPerSecond, "RequestReorderMaxDelay", dc.RequestReorderMaxDelay,
+		"FsyncStrategy", dc.FsyncStrategy, "WriteStrategy", dc.WriteStrategy, "MetadataOpTime", dc.MetadataOpTime)
+}
+
+func parseDeviceConfig(obj map[string]interface{}) (*DeviceConfig, error) {
+	var dc DeviceConfig
+
+	missingFields := map[string]struct{}{
+		"Name":                   {},
+		"SeekWindow":             {},
+		"SeekTime":               {},
+		"ReadBytesPerSecond":     {},
+		"WriteBytesPerSecond":    {},
+		"AllocateBytesPerSecond": {},
+		"RequestReorderMaxDelay": {},
+		"FsyncStrategy":          {},
+		"WriteStrategy":          {},
+		"MetadataOpTime":         {},
+	}
+
+	for k, v := range obj {
+		if _, ok := missingFields[k]; !ok {
+			return nil, fmt.Errorf("spurious field %s", k)
+		}
+		delete(missingFields, k)
+
+		strVal, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("%s: want string type, got %v", k, v)
+		}
+
+		var err error
+		switch k {
+		case "Name":
+			dc.Name = strVal
+		case "SeekWindow":
+			dc.SeekWindow, err = ParseNumBytesFromString(strVal)
+		case "SeekTime":
+			dc.SeekTime, err = time.ParseDuration(strVal)
+		case "ReadBytesPerSecond":
+			dc.ReadBytesPerSecond, err = ParseNumBytesFromString(strVal)
+		case "WriteBytesPerSecond":
+			dc.WriteBytesPerSecond, err = ParseNumBytesFromString(strVal)
+		case "AllocateBytesPerSecond":
+			dc.AllocateBytesPerSecond, err = ParseNumBytesFromString(strVal)
+		case "RequestReorderMaxDelay":
+			dc.RequestReorderMaxDelay, err = time.ParseDuration(strVal)
+		case "FsyncStrategy":
+			dc.FsyncStrategy, err = ParseFsyncStrategyFromString(strVal)
+		case "WriteStrategy":
+			dc.WriteStrategy, err = ParseWriteStrategyFromString(strVal)
+		case "MetadataOpTime":
+			dc.MetadataOpTime, err = time.ParseDuration(strVal)
+		default:
+			panic("bug")
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("%s: %s", k, err)
+		}
+
+	}
+
+	if len(missingFields) != 0 {
+		var strFields string
+		for k := range missingFields {
+			strFields += k + " "
+		}
+		return nil, fmt.Errorf("missing fields: %s", strFields)
+	}
+
+	return &dc, nil
+}
+
+// ParseDeviceConfigsFromJSON parses json containing an array of device configs.
+func ParseDeviceConfigsFromJSON(data []byte) ([]*DeviceConfig, error) {
+	// We can't set required fields or similar, so check for missing fields or spurious fields
+	// manually.
+	var dcObjs []map[string]interface{}
+	err := json.Unmarshal(data, &dcObjs)
+	if _, ok := err.(*json.UnmarshalTypeError); ok {
+		return nil, fmt.Errorf("expected array containing device configs")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	dcs := make([]*DeviceConfig, 0, len(dcObjs))
+	for _, dcObj := range dcObjs {
+		dc, err := parseDeviceConfig(dcObj)
+		if err != nil {
+			return nil, fmt.Errorf("error validating device config %v: %s", dcObj, err)
+		}
+		dcs = append(dcs, dc)
+	}
+
+	return dcs, nil
 }
 
 // WriteTime computes how long writing numBytes will take.
@@ -171,8 +288,9 @@ func computeBytesFromTime(duration time.Duration, bytesPerSecond NumBytes) NumBy
 	return NumBytes(float64(duration) / float64(time.Second) * float64(bytesPerSecond))
 }
 
-// HardDriveDeviceConfig is a basic model of a 7200rpm hard disk.
-var HardDriveDeviceConfig = DeviceConfig{
+// HDD7200RpmDeviceConfig is a basic model of a 7200rpm hard disk.
+var HDD7200RpmDeviceConfig = DeviceConfig{
+	Name:                "hdd7200rpm",
 	SeekWindow:          4 * Kibibyte,
 	SeekTime:            10 * time.Millisecond,
 	ReadBytesPerSecond:  100 * Mebibyte,
