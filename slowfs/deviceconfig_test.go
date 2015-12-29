@@ -15,6 +15,7 @@
 package slowfs
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -56,6 +57,57 @@ func TestComputeBytesFromTime(t *testing.T) {
 	for _, c := range cases {
 		if got, want := computeBytesFromTime(c.duration, c.bytesPerSecond), c.want; got != want {
 			t.Errorf("computeBytesFromTime(%s, %d) = %d, want %d", c.duration, c.bytesPerSecond, got, want)
+		}
+	}
+}
+
+func TestFsyncStrategy_String(t *testing.T) {
+	cases := []struct {
+		fsyncStrategy FsyncStrategy
+		want          string
+	}{
+		{NoFsync, "NoFsync"},
+		{DumbFsync, "DumbFsync"},
+		{WriteBackCachedFsync, "WriteBackCachedFsync"},
+		{12345, "unknown fsync strategy"},
+	}
+
+	for _, c := range cases {
+		if got, want := c.fsyncStrategy.String(), c.want; got != want {
+			t.Errorf("%d.String() = %s, want %s", c.fsyncStrategy, got, want)
+		}
+	}
+}
+
+func TestParseFsyncStrategyFromString(t *testing.T) {
+	cases := []struct {
+		strFsyncStrategy string
+		want             FsyncStrategy
+		shouldErr        bool
+	}{
+		{"nOFsyNc", NoFsync, false},
+		{"no", NoFsync, false},
+		{"none", NoFsync, false},
+		{"DUmbFsyNc", DumbFsync, false},
+		{"dumb", DumbFsync, false},
+		{"WriTeBaCkCacHedFsync", WriteBackCachedFsync, false},
+		{"wbc", WriteBackCachedFsync, false},
+		{"asdfasdf", 0, true},
+	}
+
+	for _, c := range cases {
+		got, err := ParseFsyncStrategyFromString(c.strFsyncStrategy)
+		var expectedErr error
+		if c.shouldErr {
+			expectedErr = errors.New("expected an error")
+		}
+
+		if got != c.want {
+			t.Errorf("ParseFsyncStrategyFromString(%s) = %s, want %s", c.strFsyncStrategy, got, c.want)
+		}
+
+		if c.shouldErr != (err != nil) {
+			t.Errorf("ParseFsyncStrategyFromString(%s) = _, %v, want _, %v", c.strFsyncStrategy, err, expectedErr)
 		}
 	}
 }

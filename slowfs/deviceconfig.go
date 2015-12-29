@@ -15,6 +15,8 @@
 package slowfs
 
 import (
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -32,6 +34,35 @@ const (
 	// determines how long the fsync takes.
 	WriteBackCachedFsync
 )
+
+func (f FsyncStrategy) String() string {
+	switch f {
+	case NoFsync:
+		return "NoFsync"
+	case DumbFsync:
+		return "DumbFsync"
+	case WriteBackCachedFsync:
+		return "WriteBackCachedFsync"
+	default:
+		return "unknown fsync strategy"
+	}
+}
+
+// ParseFsyncStrategyFromString parses a FsyncStrategy from a string. There can be multiple ways to
+// specify each FsyncStrategy (e.g. nofsync, none, and no all mean 'NoFsync'). This function is
+// case insensitive.
+func ParseFsyncStrategyFromString(s string) (FsyncStrategy, error) {
+	switch strings.ToLower(s) {
+	case "nofsync", "none", "no":
+		return NoFsync, nil
+	case "dumbfsync", "dumb":
+		return DumbFsync, nil
+	case "writebackcachedfsync", "writebackcache", "wbc":
+		return WriteBackCachedFsync, nil
+	default:
+		return 0, fmt.Errorf("unknown fsync strategy %s", s)
+	}
+}
 
 // WriteStrategy indicates which strategy to use for write simulation.
 type WriteStrategy int
