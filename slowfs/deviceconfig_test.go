@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slowfs/slowfs/units"
 	"testing"
 	"time"
 )
@@ -25,11 +26,11 @@ import (
 func ExampleDeviceConfig_String() {
 	n := DeviceConfig{
 		Name:                   "example",
-		SeekWindow:             4 * Kibibyte,
+		SeekWindow:             4 * units.Kibibyte,
 		SeekTime:               10 * time.Millisecond,
-		ReadBytesPerSecond:     100 * Mebibyte,
-		WriteBytesPerSecond:    100 * Mebibyte,
-		AllocateBytesPerSecond: 4096 * 100 * Mebibyte,
+		ReadBytesPerSecond:     100 * units.Mebibyte,
+		WriteBytesPerSecond:    100 * units.Mebibyte,
+		AllocateBytesPerSecond: 4096 * 100 * units.Mebibyte,
 		RequestReorderMaxDelay: 100 * time.Microsecond,
 		FsyncStrategy:          WriteBackCachedFsync,
 		WriteStrategy:          FastWrite,
@@ -53,8 +54,8 @@ func ExampleDeviceConfig_String() {
 
 func TestComputeTimeFromThroughput(t *testing.T) {
 	cases := []struct {
-		numBytes       NumBytes
-		bytesPerSecond NumBytes
+		numBytes       units.NumBytes
+		bytesPerSecond units.NumBytes
 		duration       time.Duration
 	}{
 		{1, 1, 1 * time.Second},
@@ -75,8 +76,8 @@ func TestComputeTimeFromThroughput(t *testing.T) {
 func TestComputeBytesFromTime(t *testing.T) {
 	cases := []struct {
 		duration       time.Duration
-		bytesPerSecond NumBytes
-		want           NumBytes
+		bytesPerSecond units.NumBytes
+		want           units.NumBytes
 	}{
 		{time.Second, 1, 1},
 		{time.Second, 1000, 1000},
@@ -248,11 +249,11 @@ func TestParseDeviceConfigsFromJSON(t *testing.T) {
 			}]`,
 			[]*DeviceConfig{{
 				Name:                   "7200",
-				SeekWindow:             4 * Kibibyte,
+				SeekWindow:             4 * units.Kibibyte,
 				SeekTime:               10 * time.Millisecond,
-				ReadBytesPerSecond:     100 * Mebibyte,
-				WriteBytesPerSecond:    123 * Kibibyte,
-				AllocateBytesPerSecond: 100 * Byte,
+				ReadBytesPerSecond:     100 * units.Mebibyte,
+				WriteBytesPerSecond:    123 * units.Kibibyte,
+				AllocateBytesPerSecond: 100 * units.Byte,
 				RequestReorderMaxDelay: 100 * time.Microsecond,
 				FsyncStrategy:          WriteBackCachedFsync,
 				WriteStrategy:          FastWrite,
@@ -288,11 +289,11 @@ func TestParseDeviceConfigsFromJSON(t *testing.T) {
 			[]*DeviceConfig{
 				{
 					Name:                   "7200",
-					SeekWindow:             4 * Kibibyte,
+					SeekWindow:             4 * units.Kibibyte,
 					SeekTime:               10 * time.Millisecond,
-					ReadBytesPerSecond:     100 * Mebibyte,
-					WriteBytesPerSecond:    123 * Kibibyte,
-					AllocateBytesPerSecond: 100 * Byte,
+					ReadBytesPerSecond:     100 * units.Mebibyte,
+					WriteBytesPerSecond:    123 * units.Kibibyte,
+					AllocateBytesPerSecond: 100 * units.Byte,
 					RequestReorderMaxDelay: 100 * time.Microsecond,
 					FsyncStrategy:          WriteBackCachedFsync,
 					WriteStrategy:          FastWrite,
@@ -302,9 +303,9 @@ func TestParseDeviceConfigsFromJSON(t *testing.T) {
 					Name:                   "chicken",
 					SeekWindow:             0,
 					SeekTime:               1 * time.Millisecond,
-					ReadBytesPerSecond:     1 * Byte,
-					WriteBytesPerSecond:    1 * Byte,
-					AllocateBytesPerSecond: 1 * Byte,
+					ReadBytesPerSecond:     1 * units.Byte,
+					WriteBytesPerSecond:    1 * units.Byte,
+					AllocateBytesPerSecond: 1 * units.Byte,
 					RequestReorderMaxDelay: 1 * time.Microsecond,
 					FsyncStrategy:          NoFsync,
 					WriteStrategy:          SimulateWrite,
@@ -337,69 +338,69 @@ func TestDeviceConfig_Validate(t *testing.T) {
 	}{
 		{
 			&DeviceConfig{
-				ReadBytesPerSecond:     1 * Byte,
-				WriteBytesPerSecond:    1 * Byte,
-				AllocateBytesPerSecond: 1 * Byte,
+				ReadBytesPerSecond:     1 * units.Byte,
+				WriteBytesPerSecond:    1 * units.Byte,
+				AllocateBytesPerSecond: 1 * units.Byte,
 			},
 			false,
 		},
 		{
 			&DeviceConfig{
-				ReadBytesPerSecond:     0 * Byte,
-				WriteBytesPerSecond:    1 * Byte,
-				AllocateBytesPerSecond: 1 * Byte,
+				ReadBytesPerSecond:     0 * units.Byte,
+				WriteBytesPerSecond:    1 * units.Byte,
+				AllocateBytesPerSecond: 1 * units.Byte,
 			},
 			true,
 		},
 		{
 			&DeviceConfig{
-				ReadBytesPerSecond:     1 * Byte,
-				WriteBytesPerSecond:    0 * Byte,
-				AllocateBytesPerSecond: 1 * Byte,
+				ReadBytesPerSecond:     1 * units.Byte,
+				WriteBytesPerSecond:    0 * units.Byte,
+				AllocateBytesPerSecond: 1 * units.Byte,
 			},
 			true,
 		},
 		{
 			&DeviceConfig{
-				ReadBytesPerSecond:     1 * Byte,
-				WriteBytesPerSecond:    1 * Byte,
-				AllocateBytesPerSecond: 0 * Byte,
+				ReadBytesPerSecond:     1 * units.Byte,
+				WriteBytesPerSecond:    1 * units.Byte,
+				AllocateBytesPerSecond: 0 * units.Byte,
 			},
 			true,
 		},
 		{
 			&DeviceConfig{
-				SeekWindow:             -1 * Byte,
-				ReadBytesPerSecond:     1 * Byte,
-				WriteBytesPerSecond:    1 * Byte,
-				AllocateBytesPerSecond: 1 * Byte,
+				SeekWindow:             -1 * units.Byte,
+				ReadBytesPerSecond:     1 * units.Byte,
+				WriteBytesPerSecond:    1 * units.Byte,
+				AllocateBytesPerSecond: 1 * units.Byte,
 			},
 			true,
 		},
 		{
 			&DeviceConfig{
 				SeekTime:               -1,
-				ReadBytesPerSecond:     1 * Byte,
-				WriteBytesPerSecond:    1 * Byte,
-				AllocateBytesPerSecond: 1 * Byte,
+				ReadBytesPerSecond:     1 * units.Byte,
+				WriteBytesPerSecond:    1 * units.Byte,
+				AllocateBytesPerSecond: 1 * units.Byte,
 			},
 			true,
 		},
 		{
 			&DeviceConfig{
 				RequestReorderMaxDelay: -1,
-				ReadBytesPerSecond:     1 * Byte,
-				WriteBytesPerSecond:    1 * Byte,
-				AllocateBytesPerSecond: 1 * Byte,
+				ReadBytesPerSecond:     1 * units.Byte,
+				WriteBytesPerSecond:    1 * units.Byte,
+				AllocateBytesPerSecond: 1 * units.Byte,
 			},
 			true,
 		},
 		{
 			&DeviceConfig{
 				MetadataOpTime:         -1,
-				ReadBytesPerSecond:     1 * Byte,
-				WriteBytesPerSecond:    1 * Byte,
-				AllocateBytesPerSecond: 1 * Byte,
+				ReadBytesPerSecond:     1 * units.Byte,
+				WriteBytesPerSecond:    1 * units.Byte,
+				AllocateBytesPerSecond: 1 * units.Byte,
 			},
 			true,
 		},

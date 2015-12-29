@@ -15,7 +15,7 @@
 package scheduler
 
 import (
-	"slowfs/slowfs"
+	"slowfs/slowfs/units"
 	"time"
 )
 
@@ -38,6 +38,6 @@ type Request struct {
 	Type      RequestType
 	Timestamp time.Time
 	Path      string
-	Start     slowfs.NumBytes
-	Size      slowfs.NumBytes
+	Start     units.NumBytes
+	Size      units.NumBytes
 }

@@ -17,24 +17,25 @@ package scheduler
 import (
 	"math/rand"
 	"slowfs/slowfs"
+	"slowfs/slowfs/units"
 	"time"
 )
 
 type writeBackCache struct {
 	// Records cached writes for files. Will be written back gradually or on fsync.
-	unwrittenBytes map[string]slowfs.NumBytes
+	unwrittenBytes map[string]units.NumBytes
 
 	// If a file is closed while still having writes not yet written back to disk,
 	// record them here. If a file is closed we still need to write back data for it, as that
 	// will take up spare IO time that would otherwise be used for other files getting written back.
-	orphanedUnwrittenBytes slowfs.NumBytes
+	orphanedUnwrittenBytes units.NumBytes
 
 	deviceConfig *slowfs.DeviceConfig
 }
 
 func newWriteBackCache(config *slowfs.DeviceConfig) *writeBackCache {
 	return &writeBackCache{
-		unwrittenBytes: make(map[string]slowfs.NumBytes),
+		unwrittenBytes: make(map[string]units.NumBytes),
 		deviceConfig:   config,
 	}
 }
@@ -44,13 +45,13 @@ func (wbc *writeBackCache) close(path string) {
 	delete(wbc.unwrittenBytes, path)
 }
 
-func (wbc *writeBackCache) write(path string, numBytes slowfs.NumBytes) {
+func (wbc *writeBackCache) write(path string, numBytes units.NumBytes) {
 	if numBytes > 0 {
 		wbc.unwrittenBytes[path] += numBytes
 	}
 }
 
-func (wbc *writeBackCache) getUnwrittenBytes(path string) slowfs.NumBytes {
+func (wbc *writeBackCache) getUnwrittenBytes(path string) units.NumBytes {
 	return wbc.unwrittenBytes[path]
 }
 
@@ -75,14 +76,14 @@ func (wbc *writeBackCache) writeBack(duration time.Duration) {
 	}
 
 	if duration >= wbc.deviceConfig.SeekTime {
-		wbc.orphanedUnwrittenBytes -= slowfs.NumBytesMin(wbc.orphanedUnwrittenBytes, wbc.computeWritableBytes(duration))
+		wbc.orphanedUnwrittenBytes -= units.NumBytesMin(wbc.orphanedUnwrittenBytes, wbc.computeWritableBytes(duration))
 	}
 
 }
 
 func (wbc *writeBackCache) writeBackBytesForFile(path string, duration time.Duration) time.Duration {
 	var timeTaken time.Duration
-	bytesToWrite := slowfs.NumBytesMin(wbc.unwrittenBytes[path], wbc.computeWritableBytes(duration))
+	bytesToWrite := units.NumBytesMin(wbc.unwrittenBytes[path], wbc.computeWritableBytes(duration))
 
 	if bytesToWrite != 0 {
 		timeTaken = wbc.deviceConfig.SeekTime + wbc.deviceConfig.WriteTime(bytesToWrite)
@@ -97,7 +98,7 @@ func (wbc *writeBackCache) writeBackBytesForFile(path string, duration time.Dura
 
 // We assume a seek before we can begin writing back data, so if we don't have time for that seek
 // we can't write any bytes back.
-func (wbc *writeBackCache) computeWritableBytes(duration time.Duration) slowfs.NumBytes {
+func (wbc *writeBackCache) computeWritableBytes(duration time.Duration) units.NumBytes {
 	return wbc.deviceConfig.WritableBytes(duration - wbc.deviceConfig.SeekTime)
 }
 

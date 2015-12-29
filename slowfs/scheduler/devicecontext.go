@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"slowfs/slowfs"
+	"slowfs/slowfs/units"
 	"time"
 )
 
@@ -32,7 +33,7 @@ type deviceContext struct {
 
 	// For the last accessed file, record the offset of the first byte we have not accessed.
 	// This is used to determine if reads are sequential or not.
-	firstUnseenByte slowfs.NumBytes
+	firstUnseenByte units.NumBytes
 
 	// Accesses to different files are assumed to be non-sequential reads.
 	lastAccessedFile string

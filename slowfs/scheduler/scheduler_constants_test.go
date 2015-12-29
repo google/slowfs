@@ -16,17 +16,18 @@ package scheduler
 
 import (
 	"slowfs/slowfs"
+	"slowfs/slowfs/units"
 	"time"
 )
 
 var startTime time.Time
 
 var basicDeviceConfig = &slowfs.DeviceConfig{
-	SeekWindow:             4 * slowfs.Byte,
+	SeekWindow:             4 * units.Byte,
 	SeekTime:               10 * time.Millisecond,
-	ReadBytesPerSecond:     100 * slowfs.Byte,
-	WriteBytesPerSecond:    100 * slowfs.Byte,
-	AllocateBytesPerSecond: 1000 * slowfs.Byte,
+	ReadBytesPerSecond:     100 * units.Byte,
+	WriteBytesPerSecond:    100 * units.Byte,
+	AllocateBytesPerSecond: 1000 * units.Byte,
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.SimulateWrite,
@@ -34,11 +35,11 @@ var basicDeviceConfig = &slowfs.DeviceConfig{
 }
 
 var fastWriteDeviceConfig = &slowfs.DeviceConfig{
-	SeekWindow:             4 * slowfs.Byte,
+	SeekWindow:             4 * units.Byte,
 	SeekTime:               10 * time.Millisecond,
-	ReadBytesPerSecond:     100 * slowfs.Byte,
-	WriteBytesPerSecond:    100 * slowfs.Byte,
-	AllocateBytesPerSecond: 1000 * slowfs.Byte,
+	ReadBytesPerSecond:     100 * units.Byte,
+	WriteBytesPerSecond:    100 * units.Byte,
+	AllocateBytesPerSecond: 1000 * units.Byte,
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.FastWrite,
@@ -46,11 +47,11 @@ var fastWriteDeviceConfig = &slowfs.DeviceConfig{
 }
 
 var writeBackCacheDeviceConfig = &slowfs.DeviceConfig{
-	SeekWindow:             4 * slowfs.Byte,
+	SeekWindow:             4 * units.Byte,
 	SeekTime:               10 * time.Millisecond,
-	ReadBytesPerSecond:     100 * slowfs.Byte,
-	WriteBytesPerSecond:    100 * slowfs.Byte,
-	AllocateBytesPerSecond: 1000 * slowfs.Byte,
+	ReadBytesPerSecond:     100 * units.Byte,
+	WriteBytesPerSecond:    100 * units.Byte,
+	AllocateBytesPerSecond: 1000 * units.Byte,
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.WriteBackCachedFsync,
 	WriteStrategy:          slowfs.FastWrite,
@@ -58,11 +59,11 @@ var writeBackCacheDeviceConfig = &slowfs.DeviceConfig{
 }
 
 var readWriteAsymmetricDeviceConfig = &slowfs.DeviceConfig{
-	SeekWindow:             4 * slowfs.Byte,
+	SeekWindow:             4 * units.Byte,
 	SeekTime:               10 * time.Millisecond,
-	ReadBytesPerSecond:     10 * slowfs.Byte,
-	WriteBytesPerSecond:    100 * slowfs.Byte,
-	AllocateBytesPerSecond: 1000 * slowfs.Byte,
+	ReadBytesPerSecond:     10 * units.Byte,
+	WriteBytesPerSecond:    100 * units.Byte,
+	AllocateBytesPerSecond: 1000 * units.Byte,
 	RequestReorderMaxDelay: 10 * time.Millisecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.SimulateWrite,
@@ -70,11 +71,11 @@ var readWriteAsymmetricDeviceConfig = &slowfs.DeviceConfig{
 }
 
 var notNiceNumbersDeviceConfig = &slowfs.DeviceConfig{
-	SeekWindow:             98 * slowfs.Byte,
+	SeekWindow:             98 * units.Byte,
 	SeekTime:               3*time.Millisecond + 44*time.Microsecond,
-	ReadBytesPerSecond:     83 * slowfs.Byte,
-	WriteBytesPerSecond:    37 * slowfs.Byte,
-	AllocateBytesPerSecond: 1000 * slowfs.Byte,
+	ReadBytesPerSecond:     83 * units.Byte,
+	WriteBytesPerSecond:    37 * units.Byte,
+	AllocateBytesPerSecond: 1000 * units.Byte,
 	RequestReorderMaxDelay: 6*time.Millisecond + 244*time.Microsecond,
 	FsyncStrategy:          slowfs.NoFsync,
 	WriteStrategy:          slowfs.SimulateWrite,

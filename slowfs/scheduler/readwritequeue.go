@@ -16,7 +16,7 @@ package scheduler
 
 import (
 	"math"
-	"slowfs/slowfs"
+	"slowfs/slowfs/units"
 	"time"
 )
 
@@ -43,7 +43,7 @@ func newReadWriteQueue(dc *deviceContext) *readWriteQueue {
 func (rwq *readWriteQueue) push(data *requestData) {
 	req := data.req
 	reqByteEnd := req.Start + req.Size
-	var bestDiff slowfs.NumBytes = math.MaxInt64
+	var bestDiff units.NumBytes = math.MaxInt64
 	bestIdx := len(rwq.queue)
 	for i := len(rwq.queue) - 1; i >= 0; i-- {
 		otherReq := rwq.queue[i].req

@@ -16,8 +16,8 @@
 package fuselayer
 
 import (
-	"slowfs/slowfs"
 	"slowfs/slowfs/scheduler"
+	"slowfs/slowfs/units"
 	"time"
 
 	"github.com/hanwen/go-fuse/fuse"
@@ -55,8 +55,8 @@ func (sf *slowFile) Read(dest []byte, off int64) (fuse.ReadResult, fuse.Status) 
 		Type:      scheduler.ReadRequest,
 		Timestamp: start,
 		Path:      sf.path,
-		Start:     slowfs.NumBytes(off),
-		Size:      slowfs.NumBytes(r.Size()),
+		Start:     units.NumBytes(off),
+		Size:      units.NumBytes(r.Size()),
 	})
 
 	time.Sleep(opTime - time.Since(start))
@@ -79,8 +79,8 @@ func (sf *slowFile) Write(data []byte, off int64) (uint32, fuse.Status) {
 		Type:      scheduler.WriteRequest,
 		Timestamp: start,
 		Path:      sf.path,
-		Start:     slowfs.NumBytes(off),
-		Size:      slowfs.NumBytes(r),
+		Start:     units.NumBytes(off),
+		Size:      units.NumBytes(r),
 	})
 
 	time.Sleep(opTime - time.Since(start))
@@ -215,7 +215,7 @@ func (sf *slowFile) Allocate(off uint64, size uint64, mode uint32) fuse.Status {
 	opTime := sf.sfs.scheduler.Schedule(&scheduler.Request{
 		Type:      scheduler.AllocateRequest,
 		Timestamp: start,
-		Size:      slowfs.NumBytes(size),
+		Size:      units.NumBytes(size),
 	})
 	time.Sleep(opTime - time.Since(start))
 

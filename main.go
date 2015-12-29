@@ -23,6 +23,7 @@ import (
 	"slowfs/slowfs"
 	"slowfs/slowfs/fuselayer"
 	"slowfs/slowfs/scheduler"
+	"slowfs/slowfs/units"
 	"time"
 
 	"github.com/hanwen/go-fuse/fuse/nodefs"
@@ -100,7 +101,7 @@ func main() {
 	flagsHadError := false
 
 	if *seekWindow != "" {
-		config.SeekWindow, err = slowfs.ParseNumBytesFromString(*seekWindow)
+		config.SeekWindow, err = units.ParseNumBytesFromString(*seekWindow)
 		if err != nil {
 			log.Printf("flag seek-window: %s", err)
 			flagsHadError = true
@@ -116,7 +117,7 @@ func main() {
 	}
 
 	if *readBytesPerSecond != "" {
-		config.ReadBytesPerSecond, err = slowfs.ParseNumBytesFromString(*readBytesPerSecond)
+		config.ReadBytesPerSecond, err = units.ParseNumBytesFromString(*readBytesPerSecond)
 		if err != nil {
 			log.Printf("flag read-bytes-per-second: %s", err)
 			flagsHadError = true
@@ -124,7 +125,7 @@ func main() {
 	}
 
 	if *writeBytesPerSecond != "" {
-		config.WriteBytesPerSecond, err = slowfs.ParseNumBytesFromString(*writeBytesPerSecond)
+		config.WriteBytesPerSecond, err = units.ParseNumBytesFromString(*writeBytesPerSecond)
 		if err != nil {
 			log.Printf("flag write-bytes-per-second: %s", err)
 			flagsHadError = true
@@ -132,7 +133,7 @@ func main() {
 	}
 
 	if *allocateBytesPerSecond != "" {
-		config.AllocateBytesPerSecond, err = slowfs.ParseNumBytesFromString(*allocateBytesPerSecond)
+		config.AllocateBytesPerSecond, err = units.ParseNumBytesFromString(*allocateBytesPerSecond)
 		if err != nil {
 			log.Printf("flag allocate-bytes-per-second: %s", err)
 			flagsHadError = true

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slowfs/slowfs/units"
 	"strings"
 	"time"
 )
@@ -113,20 +114,20 @@ type DeviceConfig struct {
 
 	// SeekWindow describes how many bytes ahead in a file we can access before considering
 	// it a seek.
-	SeekWindow NumBytes
+	SeekWindow units.NumBytes
 
 	// SeekTime denotes the average time of a seek.
 	SeekTime time.Duration
 
 	// ReadBytesPerSecond denotes how many bytes we can read per second.
-	ReadBytesPerSecond NumBytes
+	ReadBytesPerSecond units.NumBytes
 
 	// ReadBytesPerSecond denotes how many bytes we can write per second.
-	WriteBytesPerSecond NumBytes
+	WriteBytesPerSecond units.NumBytes
 
 	// AllocateBytesPerSecond denotes how many bytes we can allocate using
 	// fallocate per second.
-	AllocateBytesPerSecond NumBytes
+	AllocateBytesPerSecond units.NumBytes
 
 	// RequestReorderMaxDelay denotes how much later a request can be by timestamp after a previous
 	// one and still be reordered before it.
@@ -191,15 +192,15 @@ func parseDeviceConfig(obj map[string]interface{}) (*DeviceConfig, error) {
 		case "Name":
 			dc.Name = strVal
 		case "SeekWindow":
-			dc.SeekWindow, err = ParseNumBytesFromString(strVal)
+			dc.SeekWindow, err = units.ParseNumBytesFromString(strVal)
 		case "SeekTime":
 			dc.SeekTime, err = time.ParseDuration(strVal)
 		case "ReadBytesPerSecond":
-			dc.ReadBytesPerSecond, err = ParseNumBytesFromString(strVal)
+			dc.ReadBytesPerSecond, err = units.ParseNumBytesFromString(strVal)
 		case "WriteBytesPerSecond":
-			dc.WriteBytesPerSecond, err = ParseNumBytesFromString(strVal)
+			dc.WriteBytesPerSecond, err = units.ParseNumBytesFromString(strVal)
 		case "AllocateBytesPerSecond":
-			dc.AllocateBytesPerSecond, err = ParseNumBytesFromString(strVal)
+			dc.AllocateBytesPerSecond, err = units.ParseNumBytesFromString(strVal)
 		case "RequestReorderMaxDelay":
 			dc.RequestReorderMaxDelay, err = time.ParseDuration(strVal)
 		case "FsyncStrategy":
@@ -293,39 +294,39 @@ func (dc *DeviceConfig) Validate() error {
 }
 
 // WriteTime computes how long writing numBytes will take.
-func (dc *DeviceConfig) WriteTime(numBytes NumBytes) time.Duration {
+func (dc *DeviceConfig) WriteTime(numBytes units.NumBytes) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.WriteBytesPerSecond)
 }
 
 // ReadTime computes how long reading numBytes will take.
-func (dc *DeviceConfig) ReadTime(numBytes NumBytes) time.Duration {
+func (dc *DeviceConfig) ReadTime(numBytes units.NumBytes) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.ReadBytesPerSecond)
 }
 
 // AllocateTime computes how long allocating numBytes will take.
-func (dc *DeviceConfig) AllocateTime(numBytes NumBytes) time.Duration {
+func (dc *DeviceConfig) AllocateTime(numBytes units.NumBytes) time.Duration {
 	return computeTimeFromThroughput(numBytes, dc.AllocateBytesPerSecond)
 }
 
 // WritableBytes computes how many bytes can be written in the given duration.
-func (dc *DeviceConfig) WritableBytes(duration time.Duration) NumBytes {
+func (dc *DeviceConfig) WritableBytes(duration time.Duration) units.NumBytes {
 	return computeBytesFromTime(duration, dc.WriteBytesPerSecond)
 }
 
 // ReadableBytes computes how many bytes can be read in the given duration.
-func (dc *DeviceConfig) ReadableBytes(duration time.Duration) NumBytes {
+func (dc *DeviceConfig) ReadableBytes(duration time.Duration) units.NumBytes {
 	return computeBytesFromTime(duration, dc.ReadBytesPerSecond)
 }
 
-func computeTimeFromThroughput(numBytes, bytesPerSecond NumBytes) time.Duration {
+func computeTimeFromThroughput(numBytes, bytesPerSecond units.NumBytes) time.Duration {
 	return time.Duration(float64(numBytes) / float64(bytesPerSecond) * float64(time.Second))
 }
 
-func computeBytesFromTime(duration time.Duration, bytesPerSecond NumBytes) NumBytes {
+func computeBytesFromTime(duration time.Duration, bytesPerSecond units.NumBytes) units.NumBytes {
 	if duration <= 0 {
 		return 0
 	}
-	return NumBytes(float64(duration) / float64(time.Second) * float64(bytesPerSecond))
+	return units.NumBytes(float64(duration) / float64(time.Second) * float64(bytesPerSecond))
 }
 
 // Below follows the list of preset device configurations. If you add configurations, please
@@ -334,14 +335,14 @@ func computeBytesFromTime(duration time.Duration, bytesPerSecond NumBytes) NumBy
 // HDD7200RpmDeviceConfig is a basic model of a 7200rpm hard disk.
 var HDD7200RpmDeviceConfig = DeviceConfig{
 	Name:                "hdd7200rpm",
-	SeekWindow:          4 * Kibibyte,
+	SeekWindow:          4 * units.Kibibyte,
 	SeekTime:            10 * time.Millisecond,
-	ReadBytesPerSecond:  100 * Mebibyte,
-	WriteBytesPerSecond: 100 * Mebibyte,
+	ReadBytesPerSecond:  100 * units.Mebibyte,
+	WriteBytesPerSecond: 100 * units.Mebibyte,
 	// Default to 4096 times faster than writing, since ext4 block sizes are
 	// 4 KiB.
-	AllocateBytesPerSecond: 4096 * 100 * Mebibyte,
-	RequestReorderMaxDelay: 1000 * time.Microsecond,
+	AllocateBytesPerSecond: 4096 * 100 * units.Mebibyte,
+	RequestReorderMaxDelay: 100 * time.Microsecond,
 	FsyncStrategy:          WriteBackCachedFsync,
 	WriteStrategy:          FastWrite,
 	MetadataOpTime:         10 * time.Millisecond,
