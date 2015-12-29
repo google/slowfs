@@ -40,6 +40,15 @@ func main() {
 	configFile := flag.String("config-file", "", "path to config file listing device configurations")
 	configName := flag.String("config-name", "hdd7200rpm", "which config to use (built-ins: hdd7200rpm)")
 
+	// Flags for overriding any subset of the config. These are all strings (even the durations)
+	// because we need to differentiate between the flag not being specified, and being set to the
+	// default value.
+	seekWindow := flag.String("seek-window", "", "")
+	seekTime := flag.String("seek-time", "", "")
+	readBytesPerSecond := flag.String("read-bytes-per-second", "", "")
+	writeBytesPerSecond := flag.String("write-bytes-per-second", "", "")
+	allocateBytesPerSecond := flag.String("allocate-bytes-per-second", "", "")
+	requestReorderMaxDelay := flag.String("request-reorder-max-delay", "", "")
 	fsyncStrategy := flag.String("fsync-strategy", "", "choice of none/no, dumb, writebackcache/wbc")
 	writeStrategy := flag.String("write-strategy", "", "choice of fast, simulate")
 	metadataOpTime := flag.String("metadata-op-time", "", "duration value (e.g. 10ms)")
@@ -88,25 +97,82 @@ func main() {
 		log.Fatalf("unknown config %s", *configName)
 	}
 
+	flagsHadError := false
+
+	if *seekWindow != "" {
+		config.SeekWindow, err = slowfs.ParseNumBytesFromString(*seekWindow)
+		if err != nil {
+			log.Printf("flag seek-window: %s", err)
+			flagsHadError = true
+		}
+	}
+
+	if *seekTime != "" {
+		config.SeekTime, err = time.ParseDuration(*seekTime)
+		if err != nil {
+			log.Printf("flag seek-time: %s", err)
+			flagsHadError = true
+		}
+	}
+
+	if *readBytesPerSecond != "" {
+		config.ReadBytesPerSecond, err = slowfs.ParseNumBytesFromString(*readBytesPerSecond)
+		if err != nil {
+			log.Printf("flag read-bytes-per-second: %s", err)
+			flagsHadError = true
+		}
+	}
+
+	if *writeBytesPerSecond != "" {
+		config.WriteBytesPerSecond, err = slowfs.ParseNumBytesFromString(*writeBytesPerSecond)
+		if err != nil {
+			log.Printf("flag write-bytes-per-second: %s", err)
+			flagsHadError = true
+		}
+	}
+
+	if *allocateBytesPerSecond != "" {
+		config.AllocateBytesPerSecond, err = slowfs.ParseNumBytesFromString(*allocateBytesPerSecond)
+		if err != nil {
+			log.Printf("flag allocate-bytes-per-second: %s", err)
+			flagsHadError = true
+		}
+	}
+
+	if *requestReorderMaxDelay != "" {
+		config.RequestReorderMaxDelay, err = time.ParseDuration(*requestReorderMaxDelay)
+		if err != nil {
+			log.Printf("flag request-reorder-max-delay: %s", err)
+			flagsHadError = true
+		}
+	}
+
 	if *fsyncStrategy != "" {
 		config.FsyncStrategy, err = slowfs.ParseFsyncStrategyFromString(*fsyncStrategy)
 		if err != nil {
-			log.Fatalf("flag fsync-strategy: %s", err)
+			log.Printf("flag fsync-strategy: %s", err)
+			flagsHadError = true
 		}
 	}
 
 	if *writeStrategy != "" {
 		config.WriteStrategy, err = slowfs.ParseWriteStrategyFromString(*writeStrategy)
 		if err != nil {
-			log.Fatalf("flag write-strategy: %s", err)
+			log.Printf("flag write-strategy: %s", err)
+			flagsHadError = true
 		}
 	}
 
 	if *metadataOpTime != "" {
 		config.MetadataOpTime, err = time.ParseDuration(*metadataOpTime)
 		if err != nil {
-			log.Fatalf("flag metadata-op-time: %s", err)
+			log.Printf("flag metadata-op-time: %s", err)
+			flagsHadError = true
 		}
+	}
+
+	if flagsHadError {
+		log.Fatalf("flags had error(s), exiting")
 	}
 
 	err = config.Validate()
